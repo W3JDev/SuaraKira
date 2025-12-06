@@ -11,6 +11,7 @@ import { SettingsIcon, XIcon, ListIcon, ChartIcon } from './components/Icons';
 import { AppState, Transaction, DailyStats, FinancialInsight } from './types';
 import * as db from './services/db';
 import * as gemini from './services/geminiService';
+import { getCurrentSession, signOut } from './services/supabase';
 
 // Utility: Compress Image to avoid Payload Too Large errors
 const compressImage = (file: File): Promise<{ base64: string, mime: string }> => {
@@ -70,27 +71,43 @@ const App: React.FC = () => {
 
   // Load initial data
   useEffect(() => {
-    // Check for "mock" session
-    const savedUser = localStorage.getItem('suarakira_user');
-    if (savedUser) {
-      setSession({ user: JSON.parse(savedUser) });
-    }
+    const initializeApp = async () => {
+      // Check for Supabase session
+      const supabaseSession = await getCurrentSession();
+      if (supabaseSession?.user) {
+        setSession({ user: { email: supabaseSession.user.email || '' } });
+      } else {
+        // Fallback: Check for local session
+        const savedUser = localStorage.getItem('suarakira_user');
+        if (savedUser) {
+          setSession({ user: JSON.parse(savedUser) });
+        }
+      }
 
-    const loaded = db.getTransactions();
-    setTransactions(loaded);
-    setStats(db.getDailyStats(loaded));
+      // Load transactions (async)
+      const loaded = await db.getTransactions();
+      setTransactions(loaded);
+      setStats(db.getDailyStats(loaded));
 
-    // Check onboarding
-    const hasSeenOnboarding = localStorage.getItem('suarakira_onboarding_v1');
-    if (!hasSeenOnboarding && savedUser) {
-      setShowOnboarding(true);
-    }
+      // Check onboarding
+      const hasSeenOnboarding = localStorage.getItem('suarakira_onboarding_v1');
+      if (!hasSeenOnboarding && (supabaseSession?.user || savedUser)) {
+        setShowOnboarding(true);
+      }
+    };
+    
+    initializeApp();
   }, []);
 
-  const handleLogin = (email: string) => {
+  const handleLogin = async (email: string) => {
     const user = { email };
     localStorage.setItem('suarakira_user', JSON.stringify(user));
     setSession({ user });
+    
+    // Reload transactions after login
+    const loaded = await db.getTransactions();
+    setTransactions(loaded);
+    setStats(db.getDailyStats(loaded));
     
     const hasSeenOnboarding = localStorage.getItem('suarakira_onboarding_v1');
     if (!hasSeenOnboarding) {
@@ -100,9 +117,11 @@ const App: React.FC = () => {
     showToast(`Welcome back, ${email.split('@')[0]}!`, 'success');
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await signOut();
     localStorage.removeItem('suarakira_user');
     setSession(null);
+    setTransactions([]);
     showToast('Logged out successfully');
   };
 
@@ -115,8 +134,8 @@ const App: React.FC = () => {
     }
   };
 
-  const handleClearData = () => {
-    db.clearTransactions();
+  const handleClearData = async () => {
+    await db.clearTransactions();
     setTransactions([]);
     setStats({ totalSales: 0, transactionCount: 0, totalExpenses: 0 });
     setInsightData(null);
@@ -130,7 +149,7 @@ const App: React.FC = () => {
     showToast('Demo data loaded', 'success');
   };
 
-  const processTransactionResult = (result: any) => {
+  const processTransactionResult = async (result: any) => {
     let mainItemName = result.merchantName || result.item || "Unknown Item";
     if (result.items && result.items.length > 0 && !result.merchantName) {
         mainItemName = result.items[0].description;
@@ -159,7 +178,7 @@ const App: React.FC = () => {
       }
     };
 
-    const updatedTransactions = db.saveTransaction(newTransaction);
+    const updatedTransactions = await db.saveTransaction(newTransaction);
     setTransactions(updatedTransactions);
     setStats(db.getDailyStats(updatedTransactions));
     setAppState(AppState.SUCCESS);
@@ -188,7 +207,7 @@ const App: React.FC = () => {
           const mime = audioBlob.type || 'audio/webm';
           const result = await gemini.processTransactionInput({ audio: base64Audio, mime }, true);
           clearTimeout(timeoutId);
-          processTransactionResult(result);
+          await processTransactionResult(result);
         } catch (error) {
           clearTimeout(timeoutId);
           console.error(error);
@@ -214,7 +233,7 @@ const App: React.FC = () => {
     setProcessingMessage("Reading text...");
     try {
       const result = await gemini.processTransactionInput(text, false);
-      processTransactionResult(result);
+      await processTransactionResult(result);
     } catch (e) {
       setAppState(AppState.ERROR);
       showToast("Could not understand text.", "error");
@@ -243,7 +262,7 @@ const App: React.FC = () => {
        try {
          const result = await gemini.processImageTransaction(base64, mime);
          clearTimeout(timeoutId);
-         processTransactionResult(result);
+         await processTransactionResult(result);
        } catch (e) {
          console.error(e);
          clearTimeout(timeoutId);
@@ -279,7 +298,16 @@ const App: React.FC = () => {
     }
   };
 
-  const handleDeleteTransaction = (id: string) => {
+  const handleDeleteTransaction = async (id: string) => {
+    // Delete from Supabase if user is authenticated
+    try {
+      const { deleteSaleFromSupabase } = await import('./services/supabase');
+      await deleteSaleFromSupabase(id);
+    } catch (e) {
+      console.error('Failed to delete from Supabase:', e);
+    }
+    
+    // Update local state and localStorage
     const updated = transactions.filter(t => t.id !== id);
     localStorage.setItem('suarakira_transactions_v1', JSON.stringify(updated));
     setTransactions(updated);

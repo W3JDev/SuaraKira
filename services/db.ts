@@ -1,22 +1,97 @@
 import { Transaction, DailyStats } from '../types';
+import { getSalesFromSupabase, saveSaleToSupabase, deleteSaleFromSupabase, getCurrentUser } from './supabase';
 
 const STORAGE_KEY = 'suarakira_transactions_v1';
 
-export const getTransactions = (): Transaction[] => {
+// Helper: Convert Supabase sale to Transaction
+const supabaseSaleToTransaction = (sale: any): Transaction => {
+  return {
+    id: sale.id,
+    item: sale.item_name,
+    category: sale.category,
+    quantity: sale.quantity,
+    price: sale.price,
+    total: sale.total,
+    type: sale.type,
+    timestamp: new Date(sale.created_at).getTime(),
+    originalTranscript: sale.voice_input,
+    receipt: sale.receipt_data,
+  };
+};
+
+export const getTransactions = async (): Promise<Transaction[]> => {
+  try {
+    const user = await getCurrentUser();
+    
+    if (user) {
+      // User is authenticated - fetch from Supabase
+      const { data, error } = await getSalesFromSupabase();
+      if (error) {
+        console.error("Failed to load from Supabase:", error);
+        // Fallback to localStorage
+        return getLocalTransactions();
+      }
+      return data ? data.map(supabaseSaleToTransaction) : [];
+    } else {
+      // Not authenticated - use localStorage
+      return getLocalTransactions();
+    }
+  } catch (e) {
+    console.error("Failed to load transactions", e);
+    return getLocalTransactions();
+  }
+};
+
+// Local storage fallback
+const getLocalTransactions = (): Transaction[] => {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (!stored) return [];
     const parsed = JSON.parse(stored);
-    // Sort by timestamp desc
     return parsed.sort((a: Transaction, b: Transaction) => b.timestamp - a.timestamp);
   } catch (e) {
-    console.error("Failed to load transactions", e);
+    console.error("Failed to load from localStorage", e);
     return [];
   }
 };
 
-export const saveTransaction = (transaction: Transaction): Transaction[] => {
-  const current = getTransactions();
+export const saveTransaction = async (transaction: Transaction): Promise<Transaction[]> => {
+  try {
+    const user = await getCurrentUser();
+    
+    if (user) {
+      // Save to Supabase
+      const { data, error } = await saveSaleToSupabase({
+        item_name: transaction.item,
+        category: transaction.category,
+        quantity: transaction.quantity,
+        price: transaction.price,
+        total: transaction.total,
+        type: transaction.type,
+        voice_input: transaction.originalTranscript,
+        receipt_data: transaction.receipt,
+      });
+      
+      if (error) {
+        console.error('Failed to save to Supabase:', error);
+        // Fallback to localStorage
+        return saveLocalTransaction(transaction);
+      }
+      
+      // Return updated list from Supabase
+      return await getTransactions();
+    } else {
+      // Not authenticated - use localStorage
+      return saveLocalTransaction(transaction);
+    }
+  } catch (e) {
+    console.error('Error saving transaction:', e);
+    return saveLocalTransaction(transaction);
+  }
+};
+
+const saveLocalTransaction = (transaction: Transaction): Transaction[] => {
+  const current = getLocalTransactions();
   const updated = [transaction, ...current];
   localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
   return updated;
@@ -32,8 +107,12 @@ export const updateTransaction = (updatedTransaction: Transaction): Transaction[
   return current;
 };
 
-export const clearTransactions = (): void => {
+export const clearTransactions = async (): Promise<void> => {
+  // Clear localStorage
   localStorage.removeItem(STORAGE_KEY);
+  
+  // Note: For Supabase, we keep cloud data intact
+  // Users should delete individual transactions if needed
 };
 
 export const seedDemoData = (): Transaction[] => {

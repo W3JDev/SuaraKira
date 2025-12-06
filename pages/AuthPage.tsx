@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { MicIcon, WalletIcon, SparklesIcon, LoaderIcon } from '../components/Icons';
+import { signIn, signUp } from '../services/supabase';
 
 interface AuthPageProps {
   onLogin: (email: string) => void;
@@ -11,16 +12,43 @@ const AuthPage: React.FC<AuthPageProps> = ({ onLogin }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError(null);
     
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      if (isLogin) {
+        // Sign in
+        const { user, error: authError } = await signIn(email, password);
+        if (authError) {
+          setError(authError.message || 'Failed to sign in. Check your credentials.');
+          setIsLoading(false);
+          return;
+        }
+        if (user) {
+          onLogin(email);
+        }
+      } else {
+        // Sign up
+        const { user, error: authError } = await signUp(email, password);
+        if (authError) {
+          setError(authError.message || 'Failed to create account.');
+          setIsLoading(false);
+          return;
+        }
+        if (user) {
+          onLogin(email);
+        }
+      }
+    } catch (err) {
+      console.error('Auth error:', err);
+      setError('An unexpected error occurred. Please try again.');
+    } finally {
       setIsLoading(false);
-      onLogin(email);
-    }, 1500);
+    }
   };
 
   return (
@@ -93,6 +121,11 @@ const AuthPage: React.FC<AuthPageProps> = ({ onLogin }) => {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
+                {error}
+              </div>
+            )}
             <div className="space-y-1">
               <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">Email Address</label>
               <input 

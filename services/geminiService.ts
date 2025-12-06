@@ -3,9 +3,28 @@ import { TransactionType, Transaction, FinancialInsight } from "../types";
 
 let ai: GoogleGenAI | null = null;
 
+const getApiKey = (): string => {
+  // Check Vite environment variable
+  const key = import.meta.env.VITE_GEMINI_API_KEY;
+  
+  if (!key || key === 'your_api_key_here') {
+    throw new Error(
+      'Gemini API key not configured. Please set VITE_GEMINI_API_KEY in your .env file or Vercel environment variables.'
+    );
+  }
+  
+  return key;
+};
+
 const getAi = () => {
   if (!ai) {
-    ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    try {
+      const apiKey = getApiKey();
+      ai = new GoogleGenAI({ apiKey });
+    } catch (error) {
+      console.error('Failed to initialize Gemini AI:', error);
+      throw error;
+    }
   }
   return ai;
 };
