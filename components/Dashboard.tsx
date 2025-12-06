@@ -1,0 +1,261 @@
+import React from 'react';
+import { Transaction, DailyStats, FinancialInsight } from '../types';
+import { WalletIcon, TrendingUpIcon, ReceiptIcon, SparklesIcon, XIcon } from './Icons';
+import ReceiptModal from './ReceiptModal';
+
+interface DashboardProps {
+  stats: DailyStats;
+  recentTransactions: Transaction[];
+  onGenerateInsights: () => void;
+  onEditTransaction: (t: Transaction) => void;
+  insightData: FinancialInsight | null;
+  onCloseInsight: () => void;
+  isAnalyzing: boolean;
+}
+
+const Dashboard: React.FC<DashboardProps> = ({ 
+  stats, 
+  recentTransactions, 
+  onGenerateInsights, 
+  onEditTransaction,
+  insightData,
+  onCloseInsight,
+  isAnalyzing
+}) => {
+  return (
+    <div className="w-full max-w-md mx-auto space-y-6 pb-40">
+      
+      {/* Header Stats */}
+      <div className="bg-emerald-600 text-white rounded-3xl p-6 shadow-xl relative overflow-hidden">
+        <div className="absolute top-0 right-0 opacity-10 transform translate-x-1/4 -translate-y-1/4">
+          <WalletIcon className="w-48 h-48" />
+        </div>
+        <div className="relative z-10">
+          <p className="text-emerald-100 text-sm font-medium mb-1">Total Sales Today</p>
+          <h2 className="text-4xl font-bold tracking-tight">
+            RM {stats.totalSales.toFixed(2)}
+          </h2>
+          <div className="mt-6 flex justify-between items-end">
+            <div>
+              <p className="text-emerald-100 text-xs">Transactions</p>
+              <p className="text-xl font-semibold">{stats.transactionCount}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-emerald-100 text-xs">Expenses</p>
+              <p className="text-xl font-semibold text-red-200">
+                - RM {stats.totalExpenses.toFixed(2)}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* AI Insights Action */}
+      <button 
+        onClick={onGenerateInsights}
+        disabled={isAnalyzing}
+        className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 text-white p-4 rounded-2xl shadow-lg flex items-center justify-between group active:scale-[0.98] transition-all"
+      >
+        <div className="flex items-center gap-3">
+          <div className="bg-white/20 p-2 rounded-full">
+            <SparklesIcon className={`w-5 h-5 ${isAnalyzing ? 'animate-spin' : ''}`} />
+          </div>
+          <div className="text-left">
+            <p className="font-bold text-sm">Generate Financial Report</p>
+            <p className="text-xs text-indigo-100 opacity-80">Analyze anomalies & profit margins</p>
+          </div>
+        </div>
+        <div className="text-indigo-100 group-hover:translate-x-1 transition-transform">→</div>
+      </button>
+
+      {/* Insight Modal */}
+      {insightData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white w-full max-w-md rounded-3xl p-0 shadow-2xl relative overflow-hidden flex flex-col max-h-[85vh]">
+            
+            {/* Modal Header */}
+            <div className="bg-violet-600 p-6 text-white shrink-0">
+               <button onClick={onCloseInsight} className="absolute top-4 right-4 p-2 bg-white/20 hover:bg-white/30 rounded-full transition-colors">
+                <XIcon className="w-5 h-5 text-white" />
+              </button>
+              <div className="flex items-center gap-2 mb-2">
+                <SparklesIcon className="w-5 h-5 text-violet-200" />
+                <span className="text-xs font-bold uppercase tracking-wider text-violet-200">AI CFO Report</span>
+              </div>
+              <h2 className="text-xl font-bold leading-tight">{insightData.financialHealth}</h2>
+            </div>
+
+            {/* Modal Scrollable Content */}
+            <div className="overflow-y-auto p-6 space-y-8 bg-slate-50">
+              
+              {/* Anomalies Section */}
+              {insightData.anomalies.length > 0 && (
+                <section>
+                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Detected Anomalies</h3>
+                  <div className="space-y-3">
+                    {insightData.anomalies.map((a, i) => (
+                      <div key={i} className={`p-3 rounded-xl border-l-4 shadow-sm bg-white ${
+                        a.severity === 'critical' ? 'border-red-500' : 
+                        a.severity === 'warning' ? 'border-orange-400' : 'border-blue-400'
+                      }`}>
+                         <div className="flex justify-between items-start mb-1">
+                           <span className={`text-xs font-bold px-2 py-0.5 rounded ${
+                             a.severity === 'critical' ? 'bg-red-100 text-red-700' : 
+                             a.severity === 'warning' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'
+                           }`}>
+                             {a.severity.toUpperCase()}
+                           </span>
+                         </div>
+                         <h4 className="font-semibold text-slate-800 text-sm">{a.title}</h4>
+                         <p className="text-xs text-slate-600 mt-1">{a.description}</p>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {/* Profitability Table (New) */}
+              {insightData.itemProfitability && insightData.itemProfitability.length > 0 && (
+                <section>
+                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Profit Margin Analysis</h3>
+                  <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                    <table className="w-full text-left">
+                      <thead className="bg-slate-50 border-b border-slate-100">
+                        <tr>
+                          <th className="px-4 py-3 text-xs font-semibold text-slate-500">Item</th>
+                          <th className="px-4 py-3 text-xs font-semibold text-slate-500 text-right">Cost/Price</th>
+                          <th className="px-4 py-3 text-xs font-semibold text-slate-500 text-right">Margin</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {insightData.itemProfitability.slice(0, 5).map((item, idx) => (
+                          <tr key={idx}>
+                            <td className="px-4 py-3">
+                              <p className="text-sm font-medium text-slate-800 line-clamp-1">{item.name}</p>
+                              <p className="text-[10px] text-slate-400 mt-0.5">{item.advice}</p>
+                            </td>
+                            <td className="px-4 py-3 text-right">
+                              <p className="text-xs font-bold text-slate-700">RM{item.avgSellingPrice.toFixed(2)}</p>
+                              <p className="text-[10px] text-slate-400">Est: RM{item.estimatedCost.toFixed(2)}</p>
+                            </td>
+                            <td className="px-4 py-3 text-right">
+                              <span className={`inline-block px-2 py-1 rounded text-xs font-bold ${
+                                item.marginPercent > 50 ? 'bg-emerald-100 text-emerald-700' : 
+                                item.marginPercent > 30 ? 'bg-blue-100 text-blue-700' : 
+                                'bg-red-100 text-red-700'
+                              }`}>
+                                {item.marginPercent.toFixed(0)}%
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
+              )}
+
+              {/* Margins Summary */}
+              <section className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+                 <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Overall Profitability</h3>
+                 <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <p className="text-xs text-slate-500">Net Margin</p>
+                      <p className="text-2xl font-bold text-slate-800">{insightData.margins.overall}%</p>
+                    </div>
+                    <div className="text-right">
+                       <div className="mb-1">
+                         <span className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded">Best Item</span>
+                         <span className="text-xs font-medium text-slate-700 ml-1 line-clamp-1">{insightData.margins.highestMarginItem}</span>
+                       </div>
+                       <div>
+                         <span className="text-[10px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded">Worst Item</span>
+                         <span className="text-xs font-medium text-slate-700 ml-1 line-clamp-1">{insightData.margins.lowestMarginItem}</span>
+                       </div>
+                    </div>
+                 </div>
+              </section>
+
+              {/* Cash Flow Text */}
+              <section>
+                 <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Cash Flow Analysis</h3>
+                 <div className="bg-blue-50 p-4 rounded-2xl text-sm text-blue-900 leading-relaxed border border-blue-100">
+                   {insightData.cashFlowAnalysis}
+                 </div>
+              </section>
+
+              {/* Advice */}
+              <section>
+                 <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Actionable Advice</h3>
+                 <ul className="space-y-2">
+                   {insightData.actionableAdvice.map((advice, idx) => (
+                     <li key={idx} className="flex gap-3 text-sm text-slate-700 bg-white p-3 rounded-xl shadow-sm border border-slate-100">
+                       <span className="text-violet-500 font-bold">•</span>
+                       {advice}
+                     </li>
+                   ))}
+                 </ul>
+              </section>
+
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Recent Activity Section */}
+      <div>
+        <div className="flex items-center justify-between mb-4 px-2">
+          <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+            <ReceiptIcon className="w-5 h-5 text-emerald-600" />
+            Recent Activity
+          </h3>
+          <span className="text-xs text-slate-500 font-medium bg-slate-100 px-2 py-1 rounded-full">Tap to view receipt</span>
+        </div>
+
+        <div className="space-y-3">
+          {recentTransactions.length === 0 ? (
+            <div className="text-center py-12 bg-white rounded-2xl border border-slate-100 shadow-sm">
+              <div className="bg-slate-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3">
+                <ReceiptIcon className="w-8 h-8 text-slate-300" />
+              </div>
+              <p className="text-slate-400 text-sm">No transactions yet.</p>
+              <p className="text-slate-400 text-xs mt-1">Record sales, expenses, or scan receipts!</p>
+            </div>
+          ) : (
+            recentTransactions.map((t) => (
+              <div 
+                key={t.id} 
+                onClick={() => onEditTransaction(t)}
+                className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer active:bg-slate-50"
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
+                    t.type === 'sale' ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'
+                  }`}>
+                    {t.type === 'sale' ? <TrendingUpIcon className="w-5 h-5" /> : <WalletIcon className="w-5 h-5" />}
+                  </div>
+                  <div>
+                    <p className="font-semibold text-slate-800 text-sm line-clamp-1">{t.item}</p>
+                    <p className="text-xs text-slate-500">
+                      {t.receipt ? `${t.receipt.items.length} items` : `${t.quantity} x RM ${t.price.toFixed(2)}`}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className={`font-bold text-sm ${t.type === 'sale' ? 'text-emerald-600' : 'text-slate-800'}`}>
+                    {t.type === 'sale' ? '+' : '-'} RM {t.total.toFixed(2)}
+                  </p>
+                  <p className="text-[10px] text-slate-400">
+                    {new Date(t.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Dashboard;
