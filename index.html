@@ -3,6 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="author" content="w3jdev" />
+    <meta property="og:site_name" content="SuaraKira by w3jdev" />
     <title>SuaraKira - Voice Accounting</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -43,6 +45,11 @@
     "clsx": "https://esm.sh/clsx"
   }
 }
+</script>
+<script>
+  // Polyfill process.env for browser environment to prevent crashes
+  window.process = window.process || {};
+  window.process.env = window.process.env || {};
 </script>
 </head>
   <body>

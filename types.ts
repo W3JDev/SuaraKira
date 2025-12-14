@@ -1,3 +1,4 @@
+
 export type TransactionType = 'sale' | 'expense';
 
 export interface ReceiptItem {
@@ -5,6 +6,7 @@ export interface ReceiptItem {
   quantity: number;
   unitPrice: number;
   total: number;
+  estimatedUnitCost?: number; // Inferred from AI for profitability analysis
 }
 
 export interface ReceiptDetails {

@@ -12,14 +12,14 @@ const ReceiptModal: React.FC<ReceiptModalProps> = ({ transaction, onClose, onDel
   const { receipt, type } = transaction;
 
   // Formatting helpers
-  const formatCurrency = (val?: number) => val ? `RM ${val.toFixed(2)}` : '-';
+  const formatCurrency = (val?: number) => (val !== undefined && val !== null) ? `RM ${val.toFixed(2)}` : '-';
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="w-full max-w-sm bg-slate-100 rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+      <div className="w-full max-w-sm bg-slate-100 dark:bg-slate-900 rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh] transition-colors">
         
         {/* Header Actions */}
-        <div className="bg-slate-800 text-white p-4 flex justify-between items-center shrink-0">
+        <div className="bg-slate-800 dark:bg-slate-950 text-white p-4 flex justify-between items-center shrink-0">
           <div className="flex items-center gap-2">
             <ReceiptIcon className="w-5 h-5 text-slate-300" />
             <span className="font-semibold text-sm">Digital Receipt</span>
@@ -30,8 +30,8 @@ const ReceiptModal: React.FC<ReceiptModalProps> = ({ transaction, onClose, onDel
         </div>
 
         {/* Scrollable Receipt Content */}
-        <div className="overflow-y-auto p-4 custom-scrollbar">
-          {/* Paper Effect Container */}
+        <div className="overflow-y-auto p-4 custom-scrollbar bg-slate-100 dark:bg-slate-900">
+          {/* Paper Effect Container - KEEPS WHITE BACKGROUND FOR REALISM */}
           <div className="bg-white p-6 shadow-sm relative text-slate-900 font-mono text-xs sm:text-sm">
             
             {/* Jagged Top Edge (Visual only) */}
@@ -56,8 +56,8 @@ const ReceiptModal: React.FC<ReceiptModalProps> = ({ transaction, onClose, onDel
               <table className="w-full">
                 <thead className="text-[10px] text-slate-400 border-b border-slate-200">
                   <tr>
-                    <th className="text-left pb-1 font-normal">Item</th>
-                    <th className="text-center pb-1 font-normal">Qty</th>
+                    <th className="text-left pb-1 font-normal w-1/2">Item</th>
+                    <th className="text-right pb-1 font-normal">Price (Qty)</th>
                     <th className="text-right pb-1 font-normal">Total</th>
                   </tr>
                 </thead>
@@ -67,18 +67,28 @@ const ReceiptModal: React.FC<ReceiptModalProps> = ({ transaction, onClose, onDel
                       <tr key={i}>
                         <td className="py-2 pr-1">
                           <div className="font-medium">{item.description}</div>
-                          <div className="text-[10px] text-slate-400">@{item.unitPrice.toFixed(2)}</div>
+                          {item.estimatedUnitCost !== undefined && (
+                            <div className="text-[9px] text-slate-400 italic">
+                               Est. Cost: RM{(item.estimatedUnitCost || 0).toFixed(2)}
+                            </div>
+                          )}
                         </td>
-                        <td className="py-2 text-center align-top">{item.quantity}</td>
-                        <td className="py-2 text-right align-top font-medium">{item.total.toFixed(2)}</td>
+                        <td className="py-2 text-right align-top">
+                          <div>{(item.unitPrice || 0).toFixed(2)}</div>
+                          <div className="text-[10px] text-slate-400">x {item.quantity || 1}</div>
+                        </td>
+                        <td className="py-2 text-right align-top font-medium">{(item.total || 0).toFixed(2)}</td>
                       </tr>
                     ))
                   ) : (
                     // Fallback if no deep receipt data exists
                     <tr>
                       <td className="py-2 font-medium">{transaction.item}</td>
-                      <td className="py-2 text-center">{transaction.quantity}</td>
-                      <td className="py-2 text-right">{transaction.total.toFixed(2)}</td>
+                      <td className="py-2 text-right">
+                         <div>{((transaction.price || 0) / (transaction.quantity || 1)).toFixed(2)}</div>
+                         <div className="text-[10px] text-slate-400">x {transaction.quantity}</div>
+                      </td>
+                      <td className="py-2 text-right">{(transaction.total || 0).toFixed(2)}</td>
                     </tr>
                   )}
                 </tbody>
@@ -114,7 +124,7 @@ const ReceiptModal: React.FC<ReceiptModalProps> = ({ transaction, onClose, onDel
               
               <div className="flex justify-between font-bold text-lg pt-2 border-t border-slate-900 mt-2">
                 <span>Total</span>
-                <span>RM {transaction.total.toFixed(2)}</span>
+                <span>RM {(transaction.total || 0).toFixed(2)}</span>
               </div>
               
               <div className="text-center mt-6">
@@ -131,17 +141,17 @@ const ReceiptModal: React.FC<ReceiptModalProps> = ({ transaction, onClose, onDel
           </div>
           
           <div className="text-center mt-4">
-             <p className="text-[10px] text-slate-400">Generated by SuaraKira AI</p>
-             <p className="text-[10px] text-slate-300">{transaction.id}</p>
+             <p className="text-[10px] text-slate-400 dark:text-slate-500">Generated by SuaraKira AI</p>
+             <p className="text-[10px] text-slate-300 dark:text-slate-600">{transaction.id}</p>
           </div>
         </div>
 
         {/* Footer Actions */}
-        <div className="p-4 bg-slate-100 border-t border-slate-200 shrink-0">
+        <div className="p-4 bg-slate-100 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 shrink-0">
           {onDelete && (
              <button 
                onClick={() => onDelete(transaction.id)}
-               className="w-full py-3 text-red-600 font-semibold text-sm bg-white border border-red-100 rounded-xl hover:bg-red-50 transition-colors"
+               className="w-full py-3 text-red-600 dark:text-red-400 font-semibold text-sm bg-white dark:bg-slate-800 border border-red-100 dark:border-red-900/30 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
              >
                Delete Transaction
              </button>

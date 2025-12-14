@@ -47,33 +47,44 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
 
   return (
     <div className="fixed inset-0 z-[100] bg-slate-900/90 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-300">
-      <div className="w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden relative">
+      <div className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-3xl shadow-2xl overflow-hidden relative border border-white/10">
         <button onClick={onComplete} className="absolute top-4 right-4 text-slate-300 hover:text-slate-500 z-10">
           <XIcon className="w-6 h-6" />
         </button>
 
-        <div className={`h-48 ${step.color || 'bg-slate-100'} flex items-center justify-center transition-colors duration-500`}>
-          <div className={`p-6 rounded-full ${step.color ? 'bg-white/20' : 'bg-white'} shadow-xl transform scale-125`}>
+        <div className={`h-48 ${step.color || 'bg-slate-100 dark:bg-slate-800'} flex items-center justify-center transition-colors duration-500`}>
+          <div className={`p-6 rounded-full ${step.color ? 'bg-white/20' : 'bg-white dark:bg-slate-700'} shadow-xl transform scale-125`}>
             {step.icon}
           </div>
         </div>
 
         <div className="p-8 text-center space-y-4">
-          <h2 className="text-2xl font-bold text-slate-900">{step.title}</h2>
-          <p className="text-slate-500 leading-relaxed text-sm h-16">{step.description}</p>
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">{step.title}</h2>
+          <p className="text-slate-500 dark:text-slate-400 leading-relaxed text-sm h-16">{step.description}</p>
           
           <div className="flex justify-center gap-1.5 pt-4 pb-2">
             {steps.map((_, i) => (
-              <div key={i} className={`h-2 rounded-full transition-all duration-300 ${i === currentStep ? 'w-8 bg-slate-900' : 'w-2 bg-slate-200'}`} />
+              <div key={i} className={`h-2 rounded-full transition-all duration-300 ${i === currentStep ? 'w-8 bg-slate-900 dark:bg-white' : 'w-2 bg-slate-200 dark:bg-slate-700'}`} />
             ))}
           </div>
 
-          <button 
-            onClick={handleNext}
-            className="w-full py-4 bg-slate-900 text-white font-bold rounded-xl shadow-lg hover:bg-slate-800 active:scale-95 transition-all mt-4"
-          >
-            {step.action || (currentStep === steps.length - 1 ? "Start Accounting" : "Next")}
-          </button>
+          <div className="space-y-3 mt-4">
+            <button 
+              onClick={handleNext}
+              className="w-full py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold rounded-xl shadow-lg hover:bg-slate-800 dark:hover:bg-slate-200 active:scale-95 transition-all"
+            >
+              {step.action || (currentStep === steps.length - 1 ? "Start Accounting" : "Next")}
+            </button>
+            
+            {currentStep < steps.length - 1 && (
+              <button 
+                onClick={onComplete}
+                className="w-full py-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 text-sm font-medium transition-colors"
+              >
+                Skip Tutorial
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>

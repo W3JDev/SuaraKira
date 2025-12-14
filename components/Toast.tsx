@@ -30,9 +30,9 @@ const ToastContainer: React.FC<ToastContainerProps> = ({ toasts, removeToast }) 
           >
             <div className={`
               flex items-center gap-3 p-4 rounded-xl shadow-xl border backdrop-blur-md
-              ${toast.type === 'success' ? 'bg-emerald-50/90 border-emerald-200 text-emerald-900' : ''}
-              ${toast.type === 'error' ? 'bg-red-50/90 border-red-200 text-red-900' : ''}
-              ${toast.type === 'info' ? 'bg-slate-50/90 border-slate-200 text-slate-900' : ''}
+              ${toast.type === 'success' ? 'bg-emerald-50/90 dark:bg-emerald-900/90 border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-100' : ''}
+              ${toast.type === 'error' ? 'bg-red-50/90 dark:bg-red-900/90 border-red-200 dark:border-red-800 text-red-900 dark:text-red-100' : ''}
+              ${toast.type === 'info' ? 'bg-slate-50/90 dark:bg-slate-800/90 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100' : ''}
             `}>
               <div className={`
                 w-2 h-2 rounded-full shrink-0
@@ -45,7 +45,7 @@ const ToastContainer: React.FC<ToastContainerProps> = ({ toasts, removeToast }) 
               
               <button 
                 onClick={() => removeToast(toast.id)}
-                className="p-1 hover:bg-black/5 rounded-full transition-colors opacity-60 hover:opacity-100"
+                className="p-1 hover:bg-black/5 dark:hover:bg-white/10 rounded-full transition-colors opacity-60 hover:opacity-100"
               >
                 <XIcon className="w-4 h-4" />
               </button>
