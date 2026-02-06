@@ -239,6 +239,11 @@ const App: React.FC = () => {
     });
   };
 
+  // Chat open trigger
+  const handleChatOpen = () => {
+    setIsChatOpen(true);
+  };
+
   if (!session)
     return (
       <ErrorBoundary>
@@ -328,7 +333,7 @@ const App: React.FC = () => {
       </main>
 
       <InputBar
-        onAudioSubmit={handleAudioSubmit}
+        onChatOpen={handleChatOpen}
         onManualEntry={handleManualEntry}
         onImageSubmit={handleImageSubmit}
         appState={appState}

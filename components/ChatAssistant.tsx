@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { MicIcon, SparklesIcon, XIcon, ListIcon } from "./Icons";
 import { ChatMessage, Transaction } from "../types";
 import * as gemini from "../services/geminiService";
@@ -23,7 +23,10 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
 
   // Initialize Chat Session on Open
   useEffect(() => {
@@ -117,6 +120,89 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({
     }
   };
 
+  const startRecording = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          channelCount: 1,
+        },
+      });
+
+      let options: MediaRecorderOptions = {};
+      if (MediaRecorder.isTypeSupported("audio/webm;codecs=opus")) {
+        options = { mimeType: "audio/webm;codecs=opus", audioBitsPerSecond: 128000 };
+      } else if (MediaRecorder.isTypeSupported("audio/mp4")) {
+        options = { mimeType: "audio/mp4", audioBitsPerSecond: 128000 };
+      }
+
+      const mediaRecorder = new MediaRecorder(stream, options);
+      mediaRecorderRef.current = mediaRecorder;
+      chunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
+
+      mediaRecorder.onstop = async () => {
+        const mimeType = mediaRecorder.mimeType || "audio/webm";
+        const blob = new Blob(chunksRef.current, { type: mimeType });
+        stream.getTracks().forEach((track) => track.stop());
+
+        // Convert to base64 and process with Gemini
+        const reader = new FileReader();
+        reader.readAsDataURL(blob);
+        reader.onloadend = async () => {
+          const base64Audio = (reader.result as string).split(",")[1];
+          setIsTyping(true);
+
+          try {
+            const result = await gemini.processTransactionInput(
+              { audio: base64Audio, mime: mimeType },
+              true,
+            );
+            onTransactionAdd(result);
+
+            const confirmMsg: ChatMessage = {
+              id: Date.now().toString(),
+              role: "model",
+              text: `✓ Voice entry added: ${result.type === "sale" ? "Sale" : "Expense"} RM ${result.grandTotal.toFixed(2)}`,
+              timestamp: Date.now(),
+            };
+            setMessages((prev) => [...prev, confirmMsg]);
+          } catch (err) {
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: Date.now().toString(),
+                role: "model",
+                text: "Sorry, couldn't process the audio. Please try again or type instead.",
+                timestamp: Date.now(),
+              },
+            ]);
+          } finally {
+            setIsTyping(false);
+          }
+        };
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+    } catch (err) {
+      console.error("Mic Error:", err);
+      alert("Microphone access required. Please check permissions.");
+    }
+  }, [onTransactionAdd]);
+
+  const stopRecording = useCallback(() => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+  }, []);
+
   if (!isOpen) return null;
 
   return (
@@ -193,24 +279,54 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({
         {/* Input Area */}
         <div className="p-4 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 shrink-0">
           <form onSubmit={handleSend} className="relative flex items-center gap-2">
+            {/* Voice Record Button */}
+            <button
+              type="button"
+              onMouseDown={startRecording}
+              onMouseUp={stopRecording}
+              onMouseLeave={stopRecording}
+              onTouchStart={startRecording}
+              onTouchEnd={stopRecording}
+              disabled={isTyping}
+              className={`p-3 rounded-full transition-all disabled:opacity-50 ${
+                isRecording
+                  ? "bg-red-500 text-white scale-110 animate-pulse"
+                  : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
+              }`}
+              title="Hold to record voice"
+            >
+              <MicIcon className="w-5 h-5" />
+            </button>
+
             <input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Try: 'I spend 20rm in mamak' or 'sold 5 items 100rm'"
+              placeholder={
+                isRecording
+                  ? "Recording..."
+                  : "Try: 'I spend 20rm in mamak' or 'sold 5 items 100rm'"
+              }
               className="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-full px-5 py-3 text-sm focus:ring-2 focus:ring-emerald-500 dark:text-white"
               autoFocus
+              disabled={isRecording}
             />
             <button
               type="submit"
-              disabled={!input.trim() || isTyping}
+              disabled={!input.trim() || isTyping || isRecording}
               className="bg-emerald-600 text-white p-3 rounded-full hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <SparklesIcon className="w-5 h-5" />
             </button>
           </form>
           <p className="text-[10px] text-center text-slate-400 mt-2">
-            💡 Just type naturally: "spend 50 grab" or "sold 10 coffee 35rm"
+            {isRecording ? (
+              <span className="text-red-500 font-semibold animate-pulse">
+                🎤 Recording... Release to send
+              </span>
+            ) : (
+              "💡 Type or hold mic to speak: 'spend 50 grab' or 'sold 10 coffee 35rm'"
+            )}
           </p>
         </div>
       </div>
