@@ -532,7 +532,7 @@ const App: React.FC = () => {
         </div>
         <div className="flex gap-2">
           {currentRole === "admin" && (
-            <div className="bg-slate-100 dark:bg-slate-800 p-1 rounded-lg flex mr-2">
+            <div className="bg-slate-100 dark:bg-slate-800 p-1 rounded-lg flex">
               <button
                 onClick={() => setViewMode("list")}
                 className={`p-1.5 rounded-md ${viewMode === "list" ? "bg-white shadow dark:bg-slate-700" : "text-slate-400"}`}
@@ -547,18 +547,6 @@ const App: React.FC = () => {
               </button>
             </div>
           )}
-          <button
-            onClick={() => setIsChatOpen(true)}
-            className="p-2 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded-full"
-          >
-            <SparklesIcon className="w-5 h-5" />
-          </button>
-          <button
-            onClick={() => setIsSettingsOpen(true)}
-            className="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full"
-          >
-            <SettingsIcon className="w-6 h-6" />
-          </button>
         </div>
       </header>
 
