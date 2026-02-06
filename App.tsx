@@ -75,6 +75,7 @@ const App: React.FC = () => {
   const [showAccounts, setShowAccounts] = useState(false);
   const [showCategories, setShowCategories] = useState(false);
   const [showBudgets, setShowBudgets] = useState(false);
+  const [showQuickMenu, setShowQuickMenu] = useState(false);
 
   // Transaction Review State
   const [reviewData, setReviewData] = useState<Partial<Transaction> | null>(null);
@@ -584,28 +585,51 @@ const App: React.FC = () => {
         )}
       </main>
 
-      {/* Quick Access Buttons */}
-      <div className="fixed right-4 bottom-24 z-40 flex flex-col gap-2">
+      {/* Collapsible Quick Access FAB */}
+      <div className="fixed right-4 bottom-24 z-40 flex flex-col-reverse items-end gap-2">
+        {/* Expandable Menu Items */}
+        {showQuickMenu && (
+          <>
+            <button
+              onClick={() => {
+                setShowBudgets(true);
+                setShowQuickMenu(false);
+              }}
+              className="w-12 h-12 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 flex items-center justify-center text-xl transform transition-all duration-300 animate-in slide-in-from-right"
+              title="Budgets"
+            >
+              💵
+            </button>
+            <button
+              onClick={() => {
+                setShowCategories(true);
+                setShowQuickMenu(false);
+              }}
+              className="w-12 h-12 bg-purple-600 text-white rounded-full shadow-lg hover:bg-purple-700 flex items-center justify-center text-xl transform transition-all duration-300 animate-in slide-in-from-right"
+              title="Categories"
+            >
+              🏷️
+            </button>
+            <button
+              onClick={() => {
+                setShowAccounts(true);
+                setShowQuickMenu(false);
+              }}
+              className="w-12 h-12 bg-emerald-600 text-white rounded-full shadow-lg hover:bg-emerald-700 flex items-center justify-center text-xl transform transition-all duration-300 animate-in slide-in-from-right"
+              title="Accounts"
+            >
+              💰
+            </button>
+          </>
+        )}
+
+        {/* Main FAB Toggle */}
         <button
-          onClick={() => setShowBudgets(true)}
-          className="w-12 h-12 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 flex items-center justify-center text-xl"
-          title="Budgets"
+          onClick={() => setShowQuickMenu(!showQuickMenu)}
+          className={`w-14 h-14 bg-gradient-to-br from-indigo-600 to-purple-600 text-white rounded-full shadow-2xl hover:shadow-indigo-500/50 flex items-center justify-center text-2xl transform transition-all duration-300 ${showQuickMenu ? "rotate-45 scale-110" : "rotate-0 scale-100"}`}
+          title="Quick Actions"
         >
-          💵
-        </button>
-        <button
-          onClick={() => setShowCategories(true)}
-          className="w-12 h-12 bg-purple-600 text-white rounded-full shadow-lg hover:bg-purple-700 flex items-center justify-center text-xl"
-          title="Categories"
-        >
-          🏷️
-        </button>
-        <button
-          onClick={() => setShowAccounts(true)}
-          className="w-12 h-12 bg-emerald-600 text-white rounded-full shadow-lg hover:bg-emerald-700 flex items-center justify-center text-xl"
-          title="Accounts"
-        >
-          💰
+          {showQuickMenu ? "✕" : "+"}
         </button>
       </div>
 
