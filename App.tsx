@@ -14,7 +14,15 @@ import OrganizationOnboarding from "./components/OrganizationOnboarding";
 import ToastContainer, { useToast } from "./components/Toast";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { SettingsIcon, ListIcon, ChartIcon, SparklesIcon } from "./components/Icons";
-import { AppState, Transaction, DailyStats, FinancialInsight, UserRole, EntryMode } from "./types";
+import {
+  AppState,
+  Transaction,
+  DailyStats,
+  FinancialInsight,
+  UserRole,
+  EntryMode,
+  UseCase,
+} from "./types";
 import * as db from "./services/db";
 import * as gemini from "./services/geminiService";
 import { translations, Language } from "./translations";
@@ -34,8 +42,13 @@ const App: React.FC = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [stats, setStats] = useState<DailyStats>({
     totalSales: 0,
-    transactionCount: 0,
     totalExpenses: 0,
+    totalIncome: 0,
+    totalSpent: 0,
+    netAmount: 0,
+    transactionCount: 0,
+    incomeCount: 0,
+    expenseCount: 0,
   });
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -59,6 +72,9 @@ const App: React.FC = () => {
   );
   const [entryMode, setEntryMode] = useState<EntryMode>(
     () => (localStorage.getItem("suarakira_entry_mode") as EntryMode) || "both",
+  );
+  const [useCase, setUseCase] = useState<UseCase>(
+    () => (localStorage.getItem("suarakira_use_case") as UseCase) || "business",
   );
   const [notifications, setNotifications] = useState({
     lowStock: localStorage.getItem("suarakira_notif_lowstock") === "true",
@@ -122,7 +138,9 @@ const App: React.FC = () => {
       // Setup realtime subscription
       const unsubscribe = db.subscribeToTransactions((newTransactions) => {
         setTransactions(newTransactions);
-        setStats(db.getDailyStats(newTransactions));
+        const currentUseCase =
+          (localStorage.getItem("suarakira_use_case") as UseCase) || "business";
+        setStats(db.getDailyStats(newTransactions, currentUseCase));
       });
 
       return unsubscribe;
@@ -134,7 +152,8 @@ const App: React.FC = () => {
   const loadData = async (role: UserRole) => {
     const loaded = await db.getTransactions(role);
     setTransactions(loaded);
-    setStats(db.getDailyStats(loaded));
+    const currentUseCase = (localStorage.getItem("suarakira_use_case") as UseCase) || "business";
+    setStats(db.getDailyStats(loaded, currentUseCase));
   };
 
   const handleToggleTheme = () => {
@@ -145,6 +164,13 @@ const App: React.FC = () => {
       else document.documentElement.classList.remove("dark");
       return newVal;
     });
+  };
+
+  const handleSetUseCase = (mode: UseCase) => {
+    setUseCase(mode);
+    localStorage.setItem("suarakira_use_case", mode);
+    // Recalculate stats with new context
+    setStats(db.getDailyStats(transactions, mode));
   };
 
   const handleSetEntryMode = (mode: EntryMode) => {
@@ -242,7 +268,7 @@ const App: React.FC = () => {
       setIsSaving(true);
       const updatedTransactions = await db.saveTransaction(transaction);
       setTransactions(updatedTransactions);
-      setStats(db.getDailyStats(updatedTransactions));
+      setStats(db.getDailyStats(updatedTransactions, useCase));
       setReviewData(null);
       showToast(`Saved: ${transaction.item}`, "success");
     } catch (error) {
@@ -449,6 +475,7 @@ const App: React.FC = () => {
             insightData={insightData}
             onCloseInsight={() => setInsightData(null)}
             isAnalyzing={appState === AppState.ANALYZING}
+            useCase={useCase}
             t={t}
           />
         ) : currentRole === "admin" ? (
@@ -506,6 +533,8 @@ const App: React.FC = () => {
         setLang={setLang}
         entryMode={entryMode}
         setEntryMode={handleSetEntryMode}
+        useCase={useCase}
+        setUseCase={handleSetUseCase}
         onReplayOnboarding={() => setShowOnboarding(true)}
         t={t}
       />

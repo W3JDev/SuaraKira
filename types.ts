@@ -1,6 +1,7 @@
 export type TransactionType = "sale" | "expense";
 export type UserRole = "admin" | "staff";
 export type EntryMode = "expense-only" | "income-only" | "both";
+export type UseCase = "personal" | "business";
 
 export interface UserProfile {
   id: string;
@@ -8,6 +9,7 @@ export interface UserProfile {
   role: UserRole;
   email: string;
   entryMode?: EntryMode; // User's preferred entry mode
+  useCase?: UseCase; // User's context: personal finance or business
 }
 
 export interface ReceiptItem {
@@ -74,9 +76,14 @@ export interface Transaction {
 }
 
 export interface DailyStats {
-  totalSales: number;
+  totalSales: number; // For business: revenue from sales
+  totalExpenses: number; // For business: costs/expenses
+  totalIncome: number; // For personal: all money coming in
+  totalSpent: number; // For personal: all money going out
+  netAmount: number; // Sales - Expenses (business) or Income - Spent (personal)
   transactionCount: number;
-  totalExpenses: number;
+  incomeCount: number;
+  expenseCount: number;
 }
 
 export interface Anomaly {

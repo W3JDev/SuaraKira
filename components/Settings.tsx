@@ -1,7 +1,7 @@
 import React from "react";
 import { XIcon, MoonIcon, SunIcon, BellIcon } from "./Icons";
 import { Language } from "../translations";
-import { EntryMode } from "../types";
+import { EntryMode, UseCase } from "../types";
 
 interface SettingsProps {
   isOpen: boolean;
@@ -19,6 +19,8 @@ interface SettingsProps {
   setLang: (l: Language) => void;
   entryMode: EntryMode;
   setEntryMode: (mode: EntryMode) => void;
+  useCase: UseCase;
+  setUseCase: (mode: UseCase) => void;
   onReplayOnboarding: () => void;
   t: any;
 }
@@ -37,6 +39,8 @@ const Settings: React.FC<SettingsProps> = ({
   onReplayOnboarding,
   entryMode,
   setEntryMode,
+  useCase,
+  setUseCase,
   t,
 }) => {
   if (!isOpen) return null;
@@ -116,37 +120,61 @@ const Settings: React.FC<SettingsProps> = ({
                     中文
                   </button>
                 </div>
+              </div>
 
-                <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3">
-                  <span className="text-sm text-slate-700 dark:text-slate-300 block mb-2">
-                    Entry Mode
-                  </span>
-                  <div className="grid grid-cols-3 gap-2 bg-white dark:bg-slate-700 rounded-lg p-1">
-                    <button
-                      onClick={() => setEntryMode("expense-only")}
-                      className={`px-3 py-2 text-xs font-medium rounded-md transition-colors ${entryMode === "expense-only" ? "bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300" : "text-slate-500"}`}
-                    >
-                      💸 Expense Only
-                    </button>
-                    <button
-                      onClick={() => setEntryMode("income-only")}
-                      className={`px-3 py-2 text-xs font-medium rounded-md transition-colors ${entryMode === "income-only" ? "bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300" : "text-slate-500"}`}
-                    >
-                      💰 Income Only
-                    </button>
-                    <button
-                      onClick={() => setEntryMode("both")}
-                      className={`px-3 py-2 text-xs font-medium rounded-md transition-colors ${entryMode === "both" ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300" : "text-slate-500"}`}
-                    >
-                      📊 Both
-                    </button>
-                  </div>
-                  <p className="text-[10px] text-slate-400 mt-2">
-                    {entryMode === "expense-only" && "Track expenses only (e.g., for employees)"}
-                    {entryMode === "income-only" && "Track sales/income only (e.g., for cashiers)"}
-                    {entryMode === "both" && "Full accounting - track both income and expenses"}
-                  </p>
+              <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3">
+                <span className="text-sm text-slate-700 dark:text-slate-300 block mb-2">
+                  Use Case Context
+                </span>
+                <div className="grid grid-cols-2 gap-2 bg-white dark:bg-slate-700 rounded-lg p-1">
+                  <button
+                    onClick={() => setUseCase("personal")}
+                    className={`px-3 py-2 text-xs font-medium rounded-md transition-colors ${useCase === "personal" ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300" : "text-slate-500"}`}
+                  >
+                    👤 Personal Finance
+                  </button>
+                  <button
+                    onClick={() => setUseCase("business")}
+                    className={`px-3 py-2 text-xs font-medium rounded-md transition-colors ${useCase === "business" ? "bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300" : "text-slate-500"}`}
+                  >
+                    🏢 Business
+                  </button>
                 </div>
+                <p className="text-[10px] text-slate-400 mt-2">
+                  {useCase === "personal" && "Track income & expenses for personal budgeting"}
+                  {useCase === "business" && "Track sales & costs with profit analysis"}
+                </p>
+              </div>
+
+              <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 mt-2">
+                <span className="text-sm text-slate-700 dark:text-slate-300 block mb-2">
+                  Entry Mode
+                </span>
+                <div className="grid grid-cols-3 gap-2 bg-white dark:bg-slate-700 rounded-lg p-1">
+                  <button
+                    onClick={() => setEntryMode("expense-only")}
+                    className={`px-3 py-2 text-xs font-medium rounded-md transition-colors ${entryMode === "expense-only" ? "bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300" : "text-slate-500"}`}
+                  >
+                    💸 Expense Only
+                  </button>
+                  <button
+                    onClick={() => setEntryMode("income-only")}
+                    className={`px-3 py-2 text-xs font-medium rounded-md transition-colors ${entryMode === "income-only" ? "bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300" : "text-slate-500"}`}
+                  >
+                    💰 Income Only
+                  </button>
+                  <button
+                    onClick={() => setEntryMode("both")}
+                    className={`px-3 py-2 text-xs font-medium rounded-md transition-colors ${entryMode === "both" ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300" : "text-slate-500"}`}
+                  >
+                    📊 Both
+                  </button>
+                </div>
+                <p className="text-[10px] text-slate-400 mt-2">
+                  {entryMode === "expense-only" && "Track expenses only (e.g., for employees)"}
+                  {entryMode === "income-only" && "Track sales/income only (e.g., for cashiers)"}
+                  {entryMode === "both" && "Full accounting - track both income and expenses"}
+                </p>
               </div>
             </div>
           </div>

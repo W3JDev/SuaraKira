@@ -339,24 +339,49 @@ export const seedDemoData = async (): Promise<Transaction[]> => {
   }
 };
 
-export const getDailyStats = (transactions: Transaction[]): DailyStats => {
+export const getDailyStats = (
+  transactions: Transaction[],
+  useCase: "personal" | "business" = "business",
+): DailyStats => {
   const now = new Date();
   const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
 
   const todayTransactions = transactions.filter((t) => t.timestamp >= startOfDay);
 
-  return todayTransactions.reduce(
+  const stats = todayTransactions.reduce(
     (acc, curr) => {
       if (curr.type === "sale") {
         acc.totalSales += curr.total;
+        acc.totalIncome += curr.total;
+        acc.incomeCount += 1;
       } else {
         acc.totalExpenses += curr.total;
+        acc.totalSpent += curr.total;
+        acc.expenseCount += 1;
       }
       acc.transactionCount += 1;
       return acc;
     },
-    { totalSales: 0, transactionCount: 0, totalExpenses: 0 } as DailyStats,
+    {
+      totalSales: 0,
+      totalExpenses: 0,
+      totalIncome: 0,
+      totalSpent: 0,
+      netAmount: 0,
+      transactionCount: 0,
+      incomeCount: 0,
+      expenseCount: 0,
+    } as DailyStats,
   );
+
+  // Calculate net amount based on use case
+  if (useCase === "business") {
+    stats.netAmount = stats.totalSales - stats.totalExpenses;
+  } else {
+    stats.netAmount = stats.totalIncome - stats.totalSpent;
+  }
+
+  return stats;
 };
 
 // Realtime subscription helper
