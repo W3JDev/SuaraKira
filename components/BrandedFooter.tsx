@@ -2,19 +2,17 @@ import React from "react";
 
 const BrandedFooter: React.FC = () => {
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg border-t border-gray-200 dark:border-gray-700 py-3 px-4 z-40">
-      <div className="max-w-7xl mx-auto flex items-center justify-center gap-2 text-sm">
-        <span className="text-gray-600 dark:text-gray-400">
-          Crafted with ❤️ by
-        </span>
+    <div className="w-full bg-transparent py-2 px-4 mt-8">
+      <div className="max-w-md mx-auto flex items-center justify-center gap-1.5 text-xs">
+        <span className="text-slate-400 dark:text-slate-500">Crafted with ❤️ by</span>
         <a
           href="https://w3jdev.com"
           target="_blank"
           rel="noopener noreferrer"
-          className="group flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-lg font-semibold shadow-md hover:shadow-lg transition-all"
+          className="inline-flex items-center gap-1 px-2 py-0.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-md font-semibold transition-all text-xs"
         >
           <svg
-            className="w-4 h-4"
+            className="w-3 h-3"
             viewBox="0 0 24 24"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
@@ -42,23 +40,7 @@ const BrandedFooter: React.FC = () => {
             />
           </svg>
           <span className="font-bold tracking-wide">W3JDEV</span>
-          <svg
-            className="w-3 h-3 transition-transform group-hover:translate-x-1"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M9 5l7 7-7 7"
-            />
-          </svg>
         </a>
-        <span className="text-gray-600 dark:text-gray-400 hidden sm:inline">
-          | Industrial AI Solutions
-        </span>
       </div>
     </div>
   );
