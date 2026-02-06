@@ -1,0 +1,31 @@
+# Core System Rules & Architecture
+
+## 1. Technology Stack
+- **Framework:** React 18 (ES Modules/Vite-like structure)
+- **Language:** TypeScript
+- **Styling:** TailwindCSS (via CDN)
+- **AI Engine:** @google/genai (Gemini 2.5 Flash / 3.0 Pro)
+- **Database:** Browser LocalStorage (Simulating Relational DB)
+- **Icons:** Lucide-React (SVG implementations)
+
+## 2. Architecture Constraints
+- **Client-Side Only:** No backend servers (Node/Python). All logic runs in the browser.
+- **State Management:** React Context or Prop Drilling (Keep it simple).
+- **Persistence:** All data writes must go through `services/db.ts`.
+- **Environment:** `process.env.API_KEY` is the ONLY secret allowed.
+
+## 3. Operational Rules
+- **Do NOT** add `npm` or `yarn` dependencies. Use `importmap` in `index.html`.
+- **Do NOT** modify `index.html` unless adding a critical global style or script tag.
+- **Do NOT** remove the "w3jdev" branding.
+- **Strict Typing:** Avoid `any`. Define interfaces in `types.ts`.
+
+## 4. Critical Components
+- `services/geminiService.ts`: The brain. Must handle JSON cleaning robustly.
+- `services/db.ts`: The memory. Must adhere to the `Transaction` schema.
+- `components/VoiceRecorder.tsx`: The primary input interface.
+
+## 5. AI Agent Guidelines
+- When modifying AI prompts, ensure "Malaysian/South Asian" context is preserved.
+- Ensure all AI responses are strictly JSON when performing data extraction.
+- Ensure Chat interfaces maintain context history.

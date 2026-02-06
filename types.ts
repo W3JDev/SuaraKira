@@ -1,5 +1,13 @@
 
 export type TransactionType = 'sale' | 'expense';
+export type UserRole = 'admin' | 'staff';
+
+export interface UserProfile {
+  id: string;
+  name: string;
+  role: UserRole;
+  email: string;
+}
 
 export interface ReceiptItem {
   description: string;
@@ -32,6 +40,8 @@ export interface Transaction {
   timestamp: number;
   originalTranscript?: string;
   receipt?: ReceiptDetails; // New detailed structure
+  createdBy: string; // 'admin' or staff ID
+  attachment?: string; // Base64 string of image/pdf
 }
 
 export interface DailyStats {
@@ -76,11 +86,20 @@ export interface FinancialInsight {
   actionableAdvice: string[];
 }
 
+export interface ChatMessage {
+  id: string;
+  role: 'user' | 'model' | 'system';
+  text: string;
+  timestamp: number;
+  relatedTransactionId?: string;
+}
+
 export enum AppState {
   IDLE = 'IDLE',
   RECORDING = 'RECORDING',
   PROCESSING = 'PROCESSING',
   ERROR = 'ERROR',
   SUCCESS = 'SUCCESS',
-  ANALYZING = 'ANALYZING'
+  ANALYZING = 'ANALYZING',
+  CHATTING = 'CHATTING'
 }

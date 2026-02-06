@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useCallback } from 'react';
 import { MicIcon, LoaderIcon, KeyboardIcon, CameraIcon } from './Icons';
 import { AppState } from '../types';
@@ -5,7 +6,7 @@ import { AppState } from '../types';
 interface InputBarProps {
   onAudioSubmit: (audioBlob: Blob) => void;
   onImageSubmit: (file: File) => void;
-  onTextSubmit: (text: string) => void;
+  onManualEntry: () => void;
   appState: AppState;
   customStatus?: string;
   t: any;
@@ -56,11 +57,9 @@ const playFeedbackSound = (type: 'start' | 'stop') => {
   }
 };
 
-const InputBar: React.FC<InputBarProps> = ({ onAudioSubmit, onImageSubmit, onTextSubmit, appState, customStatus, t }) => {
+const InputBar: React.FC<InputBarProps> = ({ onAudioSubmit, onImageSubmit, onManualEntry, appState, customStatus, t }) => {
   const [isRecording, setIsRecording] = useState(false);
   const [isPreparing, setIsPreparing] = useState(false); // Visual feedback between touch and stream start
-  const [isTextMode, setIsTextMode] = useState(false);
-  const [textInput, setTextInput] = useState("");
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   
@@ -132,21 +131,12 @@ const InputBar: React.FC<InputBarProps> = ({ onAudioSubmit, onImageSubmit, onTex
     }
   }, []);
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       onImageSubmit(e.target.files[0]);
     }
     // Reset value to allow selecting the same file again
     e.target.value = '';
-  };
-
-  const handleTextSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (textInput.trim()) {
-      onTextSubmit(textInput);
-      setTextInput("");
-      setIsTextMode(false);
-    }
   };
 
   const isDisabled = appState === AppState.PROCESSING || appState === AppState.ANALYZING;
@@ -168,33 +158,10 @@ const InputBar: React.FC<InputBarProps> = ({ onAudioSubmit, onImageSubmit, onTex
       <input 
         type="file" 
         ref={fileInputRef}
-        accept="image/*"
+        accept="image/*,application/pdf"
         className="hidden"
-        onChange={handleImageUpload}
+        onChange={handleFileUpload}
       />
-
-      {/* Text Modal */}
-      {isTextMode && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
-          <form onSubmit={handleTextSubmit} className="bg-white dark:bg-slate-800 w-full max-w-md rounded-2xl p-4 shadow-2xl space-y-4 animate-in slide-in-from-bottom border border-slate-200 dark:border-slate-700">
-             <div className="flex justify-between items-center">
-               <h3 className="font-semibold text-slate-800 dark:text-white">{t.manualEntry}</h3>
-               <button type="button" onClick={() => setIsTextMode(false)} className="text-slate-400 dark:text-slate-500 hover:text-slate-600">{t.cancel}</button>
-             </div>
-             <textarea 
-               value={textInput}
-               onChange={(e) => setTextInput(e.target.value)}
-               placeholder={t.placeholder}
-               className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 outline-none resize-none"
-               rows={3}
-               autoFocus
-             />
-             <button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-transform">
-               {t.addTransaction}
-             </button>
-          </form>
-        </div>
-      )}
 
       {/* Floating Input Bar */}
       <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 w-full max-w-md px-4 z-40">
@@ -222,10 +189,10 @@ const InputBar: React.FC<InputBarProps> = ({ onAudioSubmit, onImageSubmit, onTex
              </div>
           )}
 
-          {/* 1. Left: Keyboard */}
+          {/* 1. Left: Manual Entry (Form) */}
           <button 
             disabled={isDisabled || isRecording}
-            onClick={() => setIsTextMode(true)}
+            onClick={onManualEntry}
             className="w-12 h-12 rounded-full flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors disabled:opacity-50"
           >
             <KeyboardIcon className="w-6 h-6" />

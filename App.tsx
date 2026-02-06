@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import Dashboard from './components/Dashboard';
 import Analytics from './components/Analytics';
@@ -5,233 +6,115 @@ import InputBar from './components/VoiceRecorder';
 import Settings from './components/Settings';
 import Onboarding from './components/Onboarding';
 import ReceiptModal from './components/ReceiptModal';
+import ChatAssistant from './components/ChatAssistant';
+import TransactionForm from './components/TransactionForm'; // New Import
 import AuthPage from './pages/AuthPage';
 import ToastContainer, { useToast } from './components/Toast';
 import ErrorBoundary from './components/ErrorBoundary';
-import { SettingsIcon, ListIcon, ChartIcon } from './components/Icons';
-import { AppState, Transaction, DailyStats, FinancialInsight } from './types';
+import { SettingsIcon, ListIcon, ChartIcon, SparklesIcon } from './components/Icons';
+import { AppState, Transaction, DailyStats, FinancialInsight, UserRole } from './types';
 import * as db from './services/db';
 import * as gemini from './services/geminiService';
 import { translations, Language } from './translations';
 
 const App: React.FC = () => {
-  // Session State
+  // Session & Role
   const [session, setSession] = useState<{ user: { email: string } } | null>(null);
-  
+  const [currentRole, setCurrentRole] = useState<UserRole>('admin');
+  const [currentUser, setCurrentUser] = useState<string>('Boss');
+
   // App State
   const [appState, setAppState] = useState<AppState>(AppState.IDLE);
   const [processingMessage, setProcessingMessage] = useState<string>("");
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [stats, setStats] = useState<DailyStats>({ totalSales: 0, transactionCount: 0, totalExpenses: 0 });
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
   const [insightData, setInsightData] = useState<FinancialInsight | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'analytics'>('list');
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   
+  // Transaction Review State
+  const [reviewData, setReviewData] = useState<Partial<Transaction> | null>(null);
+  
   // Settings State
-  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
-    return localStorage.getItem('suarakira_theme') === 'dark';
-  });
-  const [lang, setLang] = useState<Language>(() => {
-    return (localStorage.getItem('suarakira_lang') as Language) || 'en';
-  });
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => localStorage.getItem('suarakira_theme') === 'dark');
+  const [lang, setLang] = useState<Language>(() => (localStorage.getItem('suarakira_lang') as Language) || 'en');
   const [notifications, setNotifications] = useState({
     lowStock: localStorage.getItem('suarakira_notif_lowstock') === 'true',
     dailySummary: localStorage.getItem('suarakira_notif_daily') === 'true',
   });
 
   const t = translations[lang];
-
-  // Toast Hook
   const { toasts, showToast, removeToast } = useToast();
 
-  // Theme Effect
+  // Initialize
   useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('suarakira_theme', 'dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('suarakira_theme', 'light');
-    }
-  }, [isDarkMode]);
-
-  // Load initial data
-  useEffect(() => {
-    // Check for "mock" session
+    if (isDarkMode) document.documentElement.classList.add('dark');
+    
+    // Auth Check
     const savedUser = localStorage.getItem('suarakira_user');
     if (savedUser) {
       setSession({ user: JSON.parse(savedUser) });
-    }
-
-    const loaded = db.getTransactions();
-    setTransactions(loaded);
-    setStats(db.getDailyStats(loaded));
-
-    // Check onboarding
-    const hasSeenOnboarding = localStorage.getItem('suarakira_onboarding_v1');
-    if (!hasSeenOnboarding && savedUser) {
-      setShowOnboarding(true);
+      const role = db.getCurrentRole();
+      const user = db.getCurrentUser();
+      setCurrentRole(role);
+      setCurrentUser(user);
+      loadData(role);
     }
   }, []);
 
+  const loadData = (role: UserRole) => {
+    const loaded = db.getTransactions(role);
+    setTransactions(loaded);
+    setStats(db.getDailyStats(loaded));
+  };
+
   const handleToggleTheme = () => {
-    setIsDarkMode(prev => !prev);
-  };
-
-  const handleSetLanguage = (l: Language) => {
-    setLang(l);
-    localStorage.setItem('suarakira_lang', l);
-  };
-
-  const handleToggleNotification = async (type: 'lowStock' | 'dailySummary') => {
-    const newState = !notifications[type];
-    
-    if (newState) {
-      // Request permission if enabling
-      if (!('Notification' in window)) {
-        showToast("Notifications not supported", "error");
-        return;
-      }
-      const permission = await Notification.requestPermission();
-      if (permission !== 'granted') {
-        showToast("Notification permission denied", "error");
-        return;
-      }
-      // Send a test notification
-      new Notification("SuaraKira", { body: `${type === 'lowStock' ? 'Low Stock' : 'Daily Summary'} alerts enabled!` });
-    }
-
-    setNotifications(prev => ({ ...prev, [type]: newState }));
-    localStorage.setItem(type === 'lowStock' ? 'suarakira_notif_lowstock' : 'suarakira_notif_daily', String(newState));
-  };
-
-  const handleLogin = (email: string) => {
-    const user = { email };
-    localStorage.setItem('suarakira_user', JSON.stringify(user));
-    setSession({ user });
-    
-    const hasSeenOnboarding = localStorage.getItem('suarakira_onboarding_v1');
-    if (!hasSeenOnboarding) {
-      setShowOnboarding(true);
-    }
-    
-    showToast(`Welcome back, ${email.split('@')[0]}!`, 'success');
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('suarakira_user');
-    setSession(null);
-    showToast('Logged out successfully');
-  };
-
-  const handleOnboardingComplete = () => {
-    localStorage.setItem('suarakira_onboarding_v1', 'true');
-    setShowOnboarding(false);
-    
-    if (transactions.length === 0) {
-      handleLoadDemoData();
-    }
-  };
-
-  const handleReplayOnboarding = () => {
-    setShowOnboarding(true);
-  };
-
-  const handleClearData = () => {
-    db.clearTransactions();
-    setTransactions([]);
-    setStats({ totalSales: 0, transactionCount: 0, totalExpenses: 0 });
-    setInsightData(null);
-    showToast(t.clearData, 'info');
-  };
-
-  const handleLoadDemoData = () => {
-    const data = db.seedDemoData();
-    setTransactions(data);
-    setStats(db.getDailyStats(data));
-    showToast('Demo data loaded', 'success');
-  };
-
-  // --- PRICE HISTORY & ANOMALY DETECTION ---
-  const checkPriceAnomaly = (newItem: Transaction) => {
-    if (newItem.type !== 'expense') return;
-    
-    // Ignore generic uncategorized items for price tracking
-    if (newItem.item.toLowerCase().includes('uncategorized') || newItem.item.toLowerCase().includes('consolidated')) return;
-
-    // Find history of this item (fuzzy match)
-    const history = transactions.filter(t => 
-      t.type === 'expense' && 
-      t.item.toLowerCase().includes(newItem.item.toLowerCase())
-    );
-
-    if (history.length < 2) return; // Need some history
-
-    // Calculate Average Unit Price
-    let totalUnitCost = 0;
-    let validCount = 0;
-    history.forEach(h => {
-       const qty = h.quantity || 1;
-       const unitCost = qty > 0 ? (h.total || 0) / qty : 0;
-       if (unitCost > 0) {
-         totalUnitCost += unitCost;
-         validCount++;
-       }
+    setIsDarkMode(prev => {
+      const newVal = !prev;
+      localStorage.setItem('suarakira_theme', newVal ? 'dark' : 'light');
+      if (newVal) document.documentElement.classList.add('dark');
+      else document.documentElement.classList.remove('dark');
+      return newVal;
     });
-
-    if (validCount === 0) return;
-
-    const avg = totalUnitCost / validCount;
-    const currentQty = newItem.quantity || 1;
-    const currentUnit = currentQty > 0 ? (newItem.total || 0) / currentQty : 0;
-    
-    if (currentUnit === 0) return;
-
-    // Check Deviation (e.g., 20% threshold)
-    if (currentUnit > avg * 1.2) {
-       const percent = Math.round(((currentUnit - avg) / avg) * 100);
-       const msg = t.priceWarningDesc
-         .replace('{price}', (currentUnit || 0).toFixed(2))
-         .replace('{item}', newItem.item)
-         .replace('{percent}', percent.toString())
-         .replace('{avg}', (avg || 0).toFixed(2));
-       
-       showToast(msg, 'error'); // Red toast for alert
-    } else if (currentUnit < avg * 0.8) {
-       const percent = Math.round(((avg - currentUnit) / avg) * 100);
-       const msg = t.greatDealDesc
-         .replace('{price}', (currentUnit || 0).toFixed(2))
-         .replace('{item}', newItem.item)
-         .replace('{percent}', percent.toString());
-
-       showToast(msg, 'success'); // Green toast for deal
-    }
   };
 
+  const handleSwitchRole = () => {
+    const newRole = currentRole === 'admin' ? 'staff' : 'admin';
+    const newUser = newRole === 'admin' ? 'Boss' : 'Staff A';
+    
+    db.setCurrentRole(newRole);
+    localStorage.setItem('suarakira_user_name', newUser);
+    
+    setCurrentRole(newRole);
+    setCurrentUser(newUser);
+    loadData(newRole);
+    
+    showToast(`Switched to ${newRole === 'admin' ? 'Master Dashboard' : 'Staff Entry Mode'}`, 'info');
+  };
+
+  // Called when AI processing completes. Instead of saving directly, we open the Review Form.
   const processTransactionResult = (result: any) => {
     let mainItemName = result.merchantName || result.item;
-    
-    // 1. Fallback for Unknown Items
     if (!mainItemName || mainItemName.toLowerCase() === "unknown item") {
        mainItemName = result.type === 'sale' ? "Uncategorized Sale" : "Uncategorized Expense";
-    } 
-    // 2. Use first item description if merchant is missing/unknown but items exist
-    else if (result.items && result.items.length > 0 && (!result.merchantName || result.merchantName.toLowerCase() === "unknown item")) {
+    } else if (result.items && result.items.length > 0 && (!result.merchantName || result.merchantName.toLowerCase() === "unknown item")) {
        mainItemName = result.items[0].description;
     }
 
-    const newTransaction: Transaction = {
+    const draftTransaction: Partial<Transaction> = {
       id: Date.now().toString(),
       item: mainItemName,
       category: result.category || 'Uncategorized',
       quantity: 1, 
-      price: result.grandTotal,
+      price: result.grandTotal, // AI gives Total, we can assume Qty 1 default or infer
       total: result.grandTotal,
       type: result.type,
       timestamp: Date.now(),
       originalTranscript: result.originalTranscript || "Input",
+      createdBy: currentUser,
       receipt: {
         merchantName: result.merchantName,
         merchantAddress: result.merchantAddress,
@@ -245,288 +128,202 @@ const App: React.FC = () => {
       }
     };
 
-    // Run Price Check BEFORE saving (so we compare against history excluding self)
-    checkPriceAnomaly(newTransaction);
-
-    const updatedTransactions = db.saveTransaction(newTransaction);
-    setTransactions(updatedTransactions);
-    setStats(db.getDailyStats(updatedTransactions));
+    setReviewData(draftTransaction);
     setAppState(AppState.SUCCESS);
     setProcessingMessage("");
-    showToast(`Added: ${mainItemName}`, 'success');
     
-    setTimeout(() => setAppState(AppState.IDLE), 1000);
+    setTimeout(() => setAppState(AppState.IDLE), 500);
   };
 
-  const handleAudioSubmit = async (audioBlob: Blob) => {
-    // Increased timeout to 45s for slower connections/processing
-    const timeoutId = setTimeout(() => {
-      setAppState(AppState.ERROR);
-      setProcessingMessage("Request timed out");
-      showToast("Request timed out", "error");
-      setTimeout(() => setAppState(AppState.IDLE), 2000);
-    }, 45000);
+  const handleSaveTransaction = (transaction: Transaction) => {
+    const updatedTransactions = db.saveTransaction(transaction);
+    setTransactions(updatedTransactions);
+    setStats(db.getDailyStats(updatedTransactions));
+    setReviewData(null);
+    showToast(`Saved: ${transaction.item}`, 'success');
+  };
 
+  // Input Handlers
+  const handleAudioSubmit = async (audioBlob: Blob) => {
     setAppState(AppState.PROCESSING);
     setProcessingMessage(t.processing);
-    
     try {
       const reader = new FileReader();
       reader.readAsDataURL(audioBlob);
       reader.onloadend = async () => {
-        try {
-          const base64Audio = (reader.result as string).split(',')[1];
-          const mime = audioBlob.type || 'audio/webm';
-          const result = await gemini.processTransactionInput({ audio: base64Audio, mime }, true);
-          clearTimeout(timeoutId);
-          processTransactionResult(result);
-        } catch (error) {
-          clearTimeout(timeoutId);
-          console.error(error);
-          setAppState(AppState.ERROR);
-          showToast("Could not understand audio. Try again.", "error");
-          setAppState(AppState.IDLE);
-        }
+        const base64Audio = (reader.result as string).split(',')[1];
+        const result = await gemini.processTransactionInput({ audio: base64Audio, mime: audioBlob.type }, true);
+        processTransactionResult(result);
       };
-      reader.onerror = () => {
-        clearTimeout(timeoutId);
-        setAppState(AppState.ERROR);
-        showToast("Audio file error", "error");
-        setAppState(AppState.IDLE);
-      };
-    } catch (e) {
-      clearTimeout(timeoutId);
-      setAppState(AppState.IDLE);
-    }
-  };
-
-  const handleTextSubmit = async (text: string) => {
-    setAppState(AppState.PROCESSING);
-    setProcessingMessage(t.processing);
-    try {
-      const result = await gemini.processTransactionInput(text, false);
-      processTransactionResult(result);
     } catch (e) {
       setAppState(AppState.ERROR);
-      showToast("Could not understand text.", "error");
+      showToast("Audio Error", "error");
       setAppState(AppState.IDLE);
     }
   };
 
   const handleImageSubmit = async (file: File) => {
-    const timeoutId = setTimeout(() => {
-       if (appState === AppState.PROCESSING) {
-         setAppState(AppState.ERROR);
-         setProcessingMessage("Analysis timed out");
-         showToast("Image analysis timed out", "error");
-         setAppState(AppState.IDLE);
-       }
-    }, 45000);
-
     setAppState(AppState.PROCESSING);
-    setProcessingMessage("Deep Scanning Image..."); 
-    
+    setProcessingMessage("Scanning Document...");
     try {
-       const reader = new FileReader();
-       reader.readAsDataURL(file);
-       
-       reader.onloadend = async () => {
-         try {
-           if (!reader.result) throw new Error("File reading failed");
-           const base64Image = (reader.result as string).split(',')[1];
-           const result = await gemini.processImageTransaction(base64Image, file.type);
-           
-           clearTimeout(timeoutId);
-           processTransactionResult(result);
-         } catch (e) {
-           console.error(e);
-           clearTimeout(timeoutId);
-           setAppState(AppState.ERROR);
-           showToast("Could not analyze receipt.", "error");
-           setAppState(AppState.IDLE);
-         }
-       };
-
-       reader.onerror = () => {
-         clearTimeout(timeoutId);
-         setAppState(AppState.ERROR);
-         showToast("Failed to read image", "error");
-         setAppState(AppState.IDLE);
-       };
-
-    } catch (e) {
-      clearTimeout(timeoutId);
-      console.error(e);
-      setAppState(AppState.IDLE);
-    }
-  };
-
-  const handleGenerateInsights = async () => {
-    if (transactions.length < 3) {
-      showToast("Need 3+ transactions for insights", "info");
-      return;
-    }
-    setAppState(AppState.ANALYZING);
-    setProcessingMessage(t.aiThinking);
-    try {
-      const insight = await gemini.generateInsights(transactions);
-      setInsightData(insight);
-      setAppState(AppState.IDLE);
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onloadend = async () => {
+        const base64Image = (reader.result as string).split(',')[1];
+        const result = await gemini.processImageTransaction(base64Image, file.type);
+        processTransactionResult(result);
+      };
     } catch (e) {
       setAppState(AppState.ERROR);
-      showToast("Failed to generate report", "error");
+      showToast("Scan Error", "error");
       setAppState(AppState.IDLE);
     }
   };
 
-  const handleDeleteTransaction = (id: string) => {
-    const updated = transactions.filter(t => t.id !== id);
-    localStorage.setItem('suarakira_transactions_v1', JSON.stringify(updated));
-    setTransactions(updated);
-    setStats(db.getDailyStats(updated));
-    setSelectedTransaction(null);
-    showToast("Transaction deleted", "info");
+  // Manual entry trigger
+  const handleManualEntry = () => {
+    setReviewData({
+      id: Date.now().toString(),
+      type: 'sale',
+      quantity: 1,
+      price: 0,
+      total: 0,
+      timestamp: Date.now(),
+      createdBy: currentUser
+    });
   };
 
-  // ----------------------------------------------------------------------
-  // RENDER
-  // ----------------------------------------------------------------------
+  if (!session) return <ErrorBoundary><AuthPage onLogin={(email) => {
+    localStorage.setItem('suarakira_user', JSON.stringify({ email }));
+    setSession({ user: { email } });
+  }} /></ErrorBoundary>;
 
-  // 1. Toast Container (Global)
-  const renderToasts = () => <ToastContainer toasts={toasts} removeToast={removeToast} />;
-
-  // 2. Auth State Check
-  if (!session) {
-    return (
-      <ErrorBoundary>
-        {renderToasts()}
-        <AuthPage onLogin={handleLogin} />
-      </ErrorBoundary>
-    );
-  }
-
-  // 3. Main App (Authenticated)
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 selection:bg-emerald-100 pb-20 transition-colors duration-300">
-      
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 pb-20">
       {renderToasts()}
       
-      {showOnboarding && <Onboarding onComplete={handleOnboardingComplete} />}
-
-      <header className="sticky top-0 z-30 bg-slate-50/80 dark:bg-slate-900/80 backdrop-blur-md px-6 py-4 flex justify-between items-center border-b border-slate-200/50 dark:border-slate-800/50">
-        <div className="flex flex-col">
-          <h1 className="text-xl font-bold tracking-tight text-emerald-900 dark:text-emerald-400 flex items-center gap-2">
-            SuaraKira
-            <span className="text-[10px] bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded-full font-medium">PRO</span>
-          </h1>
-          <a href="https://w3jdev.com" target="_blank" rel="noopener noreferrer" className="text-[10px] text-slate-400 dark:text-slate-500 font-medium hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
-            by w3jdev
-          </a>
+      {/* Header */}
+      <header className="sticky top-0 z-30 bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-md px-6 py-4 flex justify-between items-center border-b border-slate-200 dark:border-slate-800">
+        <div>
+          <h1 className="text-xl font-bold text-emerald-900 dark:text-emerald-400">SuaraKira</h1>
+          <p className="text-[10px] text-slate-500 uppercase tracking-wide font-semibold">
+            {currentRole === 'admin' ? 'Master Dashboard' : `Staff Book: ${currentUser}`}
+          </p>
         </div>
-        
-        <div className="flex items-center gap-2">
-           {/* View Switcher */}
-           <div className="bg-slate-100 dark:bg-slate-800 p-1 rounded-lg flex items-center mr-2">
-              <button 
-                onClick={() => setViewMode('list')}
-                className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-white dark:bg-slate-700 shadow text-slate-800 dark:text-white' : 'text-slate-400 dark:text-slate-500'}`}
-              >
-                <ListIcon className="w-4 h-4" />
-              </button>
-              <button 
-                 onClick={() => setViewMode('analytics')}
-                 className={`p-1.5 rounded-md transition-all ${viewMode === 'analytics' ? 'bg-white dark:bg-slate-700 shadow text-slate-800 dark:text-white' : 'text-slate-400 dark:text-slate-500'}`}
-              >
-                <ChartIcon className="w-4 h-4" />
-              </button>
-           </div>
-           
-           <button 
-            onClick={() => setIsSettingsOpen(true)}
-            className="p-2 -mr-2 text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded-full transition-colors"
-          >
-            <SettingsIcon className="w-6 h-6" />
-          </button>
+        <div className="flex gap-2">
+           {currentRole === 'admin' && (
+             <div className="bg-slate-100 dark:bg-slate-800 p-1 rounded-lg flex mr-2">
+                <button onClick={() => setViewMode('list')} className={`p-1.5 rounded-md ${viewMode === 'list' ? 'bg-white shadow dark:bg-slate-700' : 'text-slate-400'}`}><ListIcon className="w-4 h-4" /></button>
+                <button onClick={() => setViewMode('analytics')} className={`p-1.5 rounded-md ${viewMode === 'analytics' ? 'bg-white shadow dark:bg-slate-700' : 'text-slate-400'}`}><ChartIcon className="w-4 h-4" /></button>
+             </div>
+           )}
+           <button onClick={() => setIsChatOpen(true)} className="p-2 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded-full">
+             <SparklesIcon className="w-5 h-5" />
+           </button>
+           <button onClick={() => setIsSettingsOpen(true)} className="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full">
+             <SettingsIcon className="w-6 h-6" />
+           </button>
         </div>
       </header>
 
       <main className="p-6">
-        <ErrorBoundary>
         {viewMode === 'list' ? (
-           <>
-            <Dashboard 
-              stats={stats} 
-              recentTransactions={transactions}
-              onGenerateInsights={handleGenerateInsights}
-              onEditTransaction={setSelectedTransaction}
-              insightData={insightData}
-              onCloseInsight={() => setInsightData(null)}
-              isAnalyzing={appState === AppState.ANALYZING}
-              t={t}
-            />
-            {transactions.length === 0 && (
-              <div className="mt-8 text-center">
-                 <button onClick={handleLoadDemoData} className="text-sm text-emerald-600 dark:text-emerald-400 font-medium underline">
-                   {t.loadDemo}
-                 </button>
-              </div>
-            )}
-           </>
+           <Dashboard 
+             stats={stats} 
+             recentTransactions={transactions}
+             onGenerateInsights={async () => {
+               if (currentRole !== 'admin') {
+                 showToast("Access Denied: Master Dashboard Only", "error");
+                 return;
+               }
+               setAppState(AppState.ANALYZING);
+               try {
+                 const i = await gemini.generateInsights(transactions);
+                 setInsightData(i);
+               } finally { setAppState(AppState.IDLE); }
+             }}
+             onEditTransaction={(t) => setSelectedTransaction(t)}
+             insightData={insightData}
+             onCloseInsight={() => setInsightData(null)}
+             isAnalyzing={appState === AppState.ANALYZING}
+             t={t}
+           />
         ) : (
-          <Analytics transactions={transactions} isDark={isDarkMode} t={t} />
+          currentRole === 'admin' ? <Analytics transactions={transactions} isDark={isDarkMode} t={t} /> : 
+          <div className="text-center py-20 text-slate-400">Analytics restricted to Master Dashboard.</div>
         )}
-        </ErrorBoundary>
       </main>
 
       <InputBar 
         onAudioSubmit={handleAudioSubmit}
-        onTextSubmit={handleTextSubmit}
+        onManualEntry={handleManualEntry}
         onImageSubmit={handleImageSubmit}
         appState={appState} 
         customStatus={processingMessage}
         t={t}
       />
 
-      <ErrorBoundary>
-        <Settings 
-          isOpen={isSettingsOpen} 
-          onClose={() => setIsSettingsOpen(false)} 
-          onClearData={handleClearData}
-          isDarkMode={isDarkMode}
-          toggleTheme={handleToggleTheme}
-          notifications={notifications}
-          toggleNotification={handleToggleNotification}
-          lang={lang}
-          setLang={handleSetLanguage}
-          onReplayOnboarding={handleReplayOnboarding}
-          t={t}
+      {/* Manual Entry / Review Form */}
+      {reviewData && (
+        <TransactionForm 
+          initialData={reviewData}
+          onSave={handleSaveTransaction}
+          onCancel={() => setReviewData(null)}
+          currentUser={currentUser}
         />
-      </ErrorBoundary>
+      )}
+
+      {/* Floating Chat Assistant */}
+      <ChatAssistant 
+        isOpen={isChatOpen}
+        onClose={() => setIsChatOpen(false)}
+        transactions={transactions}
+        userRole={currentRole}
+        userName={currentUser}
+        onTransactionAdd={processTransactionResult}
+      />
+
+      <Settings 
+        isOpen={isSettingsOpen} 
+        onClose={() => setIsSettingsOpen(false)} 
+        onClearData={() => { db.clearTransactions(); loadData(currentRole); }}
+        isDarkMode={isDarkMode}
+        toggleTheme={handleToggleTheme}
+        notifications={notifications}
+        toggleNotification={() => {}} // simplified
+        lang={lang}
+        setLang={setLang}
+        onReplayOnboarding={() => setShowOnboarding(true)}
+        t={t}
+      />
       
-      {/* Logout button hidden inside Settings, but logic is here */}
       {isSettingsOpen && (
-        <div className="fixed bottom-6 left-6 z-[70]">
-           <button 
-            onClick={handleLogout}
-            className="text-xs text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 underline"
-           >
-             Log Out
-           </button>
+        <div className="fixed bottom-20 left-6 z-[70] w-full max-w-xs">
+          <button onClick={handleSwitchRole} className="w-full bg-slate-800 text-white py-3 rounded-xl shadow-lg mb-2 text-sm font-bold">
+            Switch Role: {currentRole === 'admin' ? 'To Staff' : 'To Admin'}
+          </button>
         </div>
       )}
 
       {selectedTransaction && (
-        <ErrorBoundary>
-          <ReceiptModal 
-            transaction={selectedTransaction} 
-            onClose={() => setSelectedTransaction(null)}
-            onDelete={handleDeleteTransaction}
-          />
-        </ErrorBoundary>
+        <ReceiptModal 
+          transaction={selectedTransaction} 
+          onClose={() => setSelectedTransaction(null)}
+          onDelete={(id) => {
+             db.deleteTransaction(id);
+             loadData(currentRole);
+             setSelectedTransaction(null);
+          }}
+        />
       )}
       
+      {showOnboarding && <Onboarding onComplete={() => setShowOnboarding(false)} />}
     </div>
   );
+  
+  function renderToasts() {
+      return <ToastContainer toasts={toasts} removeToast={removeToast} />;
+  }
 };
 
 export default App;
