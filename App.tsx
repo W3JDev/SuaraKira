@@ -234,6 +234,20 @@ const App: React.FC = () => {
     localStorage.setItem("suarakira_entry_mode", mode);
   };
 
+  const handleToggleNotification = (type: "lowStock" | "dailySummary") => {
+    setNotifications((prev) => {
+      const newVal = {
+        ...prev,
+        [type]: !prev[type],
+      };
+      localStorage.setItem(
+        type === "lowStock" ? "suarakira_notif_lowstock" : "suarakira_notif_daily",
+        String(newVal[type]),
+      );
+      return newVal;
+    });
+  };
+
   const handleDateRangeChange = (range: DateRange, customStart?: Date, customEnd?: Date) => {
     setDateRange(range);
     if (range === "custom" && customStart && customEnd) {
@@ -595,30 +609,30 @@ const App: React.FC = () => {
                 setShowBudgets(true);
                 setShowQuickMenu(false);
               }}
-              className="w-12 h-12 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 flex items-center justify-center text-xl transform transition-all duration-300 animate-in slide-in-from-right"
+              className="w-11 h-11 glass-btn feedback-tap bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-full flex items-center justify-center text-lg shadow-lg hover-lift animate-pop-in delay-100"
               title="Budgets"
             >
-              💵
+              <span className="icon-highlight">💵</span>
             </button>
             <button
               onClick={() => {
                 setShowCategories(true);
                 setShowQuickMenu(false);
               }}
-              className="w-12 h-12 bg-purple-600 text-white rounded-full shadow-lg hover:bg-purple-700 flex items-center justify-center text-xl transform transition-all duration-300 animate-in slide-in-from-right"
+              className="w-11 h-11 glass-btn feedback-tap bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-full flex items-center justify-center text-lg shadow-lg hover-lift animate-pop-in delay-200"
               title="Categories"
             >
-              🏷️
+              <span className="icon-highlight">🏷️</span>
             </button>
             <button
               onClick={() => {
                 setShowAccounts(true);
                 setShowQuickMenu(false);
               }}
-              className="w-12 h-12 bg-emerald-600 text-white rounded-full shadow-lg hover:bg-emerald-700 flex items-center justify-center text-xl transform transition-all duration-300 animate-in slide-in-from-right"
+              className="w-11 h-11 glass-btn feedback-tap bg-gradient-to-br from-emerald-500 to-emerald-600 text-white rounded-full flex items-center justify-center text-lg shadow-lg hover-lift animate-pop-in delay-300"
               title="Accounts"
             >
-              💰
+              <span className="icon-highlight">💰</span>
             </button>
           </>
         )}
@@ -626,10 +640,14 @@ const App: React.FC = () => {
         {/* Main FAB Toggle */}
         <button
           onClick={() => setShowQuickMenu(!showQuickMenu)}
-          className={`w-14 h-14 bg-gradient-to-br from-indigo-600 to-purple-600 text-white rounded-full shadow-2xl hover:shadow-indigo-500/50 flex items-center justify-center text-2xl transform transition-all duration-300 ${showQuickMenu ? "rotate-45 scale-110" : "rotate-0 scale-100"}`}
+          className={`w-12 h-12 fab-3d feedback-tap text-white rounded-full flex items-center justify-center font-bold morph-transition ${showQuickMenu ? "rotate-45 scale-105" : "rotate-0 scale-100"}`}
+          style={{
+            fontSize: showQuickMenu ? "1.5rem" : "1.75rem",
+            lineHeight: 1,
+          }}
           title="Quick Actions"
         >
-          {showQuickMenu ? "✕" : "+"}
+          <span className="icon-highlight">{showQuickMenu ? "✕" : "+"}</span>
         </button>
       </div>
 
@@ -665,7 +683,7 @@ const App: React.FC = () => {
         isDarkMode={isDarkMode}
         toggleTheme={handleToggleTheme}
         notifications={notifications}
-        toggleNotification={() => {}}
+        toggleNotification={handleToggleNotification}
         lang={lang}
         setLang={setLang}
         entryMode={entryMode}
@@ -731,6 +749,7 @@ const App: React.FC = () => {
         active={activeNavItem}
         onNavigate={handleBottomNavNavigate}
         hasNewActivity={transactions.length > 0}
+        isDarkMode={isDarkMode}
       />
     </div>
   );

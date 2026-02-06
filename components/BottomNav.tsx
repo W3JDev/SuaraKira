@@ -7,9 +7,15 @@ interface BottomNavProps {
   active: NavItem;
   onNavigate: (item: NavItem) => void;
   hasNewActivity?: boolean;
+  isDarkMode?: boolean;
 }
 
-const BottomNav: React.FC<BottomNavProps> = ({ active, onNavigate, hasNewActivity = false }) => {
+const BottomNav: React.FC<BottomNavProps> = ({
+  active,
+  onNavigate,
+  hasNewActivity = false,
+  isDarkMode = false,
+}) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleScanClick = () => {
@@ -63,18 +69,10 @@ const BottomNav: React.FC<BottomNavProps> = ({ active, onNavigate, hasNewActivit
         }}
       />
 
-      <nav className="fixed bottom-0 left-0 right-0 z-50 pb-safe">
-        {/* Glassmorphism Background with Premium Shadow */}
-        <div
-          className="absolute inset-0 backdrop-blur-2xl bg-white/70 dark:bg-slate-900/70 border-t border-white/30 dark:border-slate-700/30"
-          style={{
-            boxShadow: "0 -8px 32px -4px rgba(0, 0, 0, 0.1), 0 -2px 8px -2px rgba(0, 0, 0, 0.06)",
-          }}
-        />
-
+      <nav className="fixed bottom-0 left-0 right-0 z-50 pb-safe glass-nav dark:glass-nav-dark">
         {/* Content Container */}
         <div className="relative max-w-2xl mx-auto px-2 sm:px-6">
-          <div className="flex items-end justify-around pt-2 pb-2">
+          <div className="flex items-end justify-around pt-1.5 pb-1.5">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = active === item.id;
@@ -91,15 +89,16 @@ const BottomNav: React.FC<BottomNavProps> = ({ active, onNavigate, hasNewActivit
                     }
                   }}
                   className={`
-                    relative flex flex-col items-center justify-center gap-0.5 px-2 rounded-2xl
+                    relative flex flex-col items-center justify-center gap-0.5 px-1.5 rounded-xl
+                    glass-btn ${isDarkMode ? "glass-btn-dark" : ""} feedback-tap
                     transition-all duration-300 ease-out group
-                    ${isPrimary ? "pb-1.5 pt-2" : "py-1.5"}
+                    ${isPrimary ? "pb-1 pt-1.5" : "py-1"}
                     ${
                       isActive
                         ? isPrimary
-                          ? "scale-105 -translate-y-1"
+                          ? "scale-102 -translate-y-0.5"
                           : "scale-100"
-                        : "scale-100 hover:scale-105 active:scale-95"
+                        : "scale-100 hover-lift active:pressed-3d"
                     }
                   `}
                   style={{
@@ -119,31 +118,31 @@ const BottomNav: React.FC<BottomNavProps> = ({ active, onNavigate, hasNewActivit
                   {/* Icon Container with Gradient Background when Active */}
                   <div
                     className={`
-                      relative rounded-2xl p-2 transition-all duration-300
+                      relative rounded-xl p-1.5 transition-all duration-300 shine-effect
                       ${
                         isActive
-                          ? `bg-gradient-to-br ${item.color} shadow-lg`
-                          : "bg-transparent group-hover:bg-slate-100/60 dark:group-hover:bg-slate-800/60"
+                          ? `bg-gradient-to-br ${item.color} shadow-lg ${isPrimary ? "glow-active" : ""}`
+                          : "bg-transparent group-hover:bg-slate-100/40 dark:group-hover:bg-slate-800/40"
                       }
                       ${isPrimary && isActive ? "shadow-xl scale-105" : ""}
                     `}
                     style={{
                       boxShadow: isActive
-                        ? `0 8px 24px -4px ${item.color.includes("emerald") ? "rgba(16, 185, 129, 0.4)" : "rgba(0, 0, 0, 0.2)"}`
+                        ? `0 6px 20px -4px ${item.color.includes("emerald") ? "rgba(16, 185, 129, 0.5)" : "rgba(0, 0, 0, 0.25)"}, inset 0 1px 2px rgba(255, 255, 255, 0.2)`
                         : undefined,
                     }}
                   >
                     <Icon
                       className={`
-                        ${isPrimary ? "w-6 h-6" : "w-5 h-5"}
-                        transition-all duration-300
-                        ${isActive ? "text-white scale-105" : "text-slate-600 dark:text-slate-400"}
+                        ${isPrimary ? "w-5 h-5" : "w-4.5 h-4.5"}
+                        transition-all duration-300 icon-highlight
+                        ${isActive ? "text-white scale-105 drop-shadow-lg" : "text-slate-600 dark:text-slate-400"}
                       `}
                     />
                     {/* Glow effect when active */}
                     {isActive && (
                       <div
-                        className="absolute inset-0 blur-xl opacity-30 rounded-2xl"
+                        className="absolute inset-0 blur-lg opacity-40 rounded-xl animate-pulse-glow"
                         style={{
                           background: `linear-gradient(135deg, ${item.color.replace("from-", "").replace(" to-", ", ")})`,
                         }}
@@ -154,11 +153,11 @@ const BottomNav: React.FC<BottomNavProps> = ({ active, onNavigate, hasNewActivit
                   {/* Label - Hidden on small screens */}
                   <span
                     className={`
-                      hidden sm:block text-[9px] font-semibold tracking-wide transition-all duration-300
+                      hidden sm:block text-[8px] font-semibold tracking-wider transition-all duration-300
                       ${
                         isActive
                           ? "text-slate-900 dark:text-white opacity-100"
-                          : "text-slate-500 dark:text-slate-400 opacity-80"
+                          : "text-slate-500 dark:text-slate-400 opacity-70"
                       }
                       ${isPrimary && isActive ? "font-bold" : ""}
                     `}
@@ -185,15 +184,15 @@ const BottomNav: React.FC<BottomNavProps> = ({ active, onNavigate, hasNewActivit
           </div>
 
           {/* W3JDEV Branding - Ultra Compact */}
-          <div className="flex items-center justify-center pb-1 pt-0.5">
+          <div className="flex items-center justify-center pb-0.5 pt-0">
             <a
               href="https://w3jdev.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full opacity-40 hover:opacity-100 transition-opacity duration-300"
+              className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full opacity-30 hover:opacity-100 transition-all duration-300 hover-lift"
             >
               <svg
-                className="w-2.5 h-2.5 text-slate-400 dark:text-slate-500"
+                className="w-2 h-2 text-slate-400 dark:text-slate-500"
                 viewBox="0 0 24 24"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
@@ -220,7 +219,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ active, onNavigate, hasNewActivit
                   strokeLinejoin="round"
                 />
               </svg>
-              <span className="text-[8px] font-semibold text-slate-400 dark:text-slate-500 tracking-wide">
+              <span className="text-[7px] font-semibold text-slate-400 dark:text-slate-500 tracking-wider">
                 W3JDEV
               </span>
             </a>
@@ -228,12 +227,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ active, onNavigate, hasNewActivit
         </div>
 
         {/* iOS Safe Area Spacer */}
-        <div
-          className="h-safe-area-inset-bottom bg-gradient-to-b from-transparent to-white/70 dark:to-slate-900/70"
-          style={{
-            backdropFilter: "blur(20px)",
-          }}
-        />
+        <div className="h-safe-area-inset-bottom" />
 
         {/* Animation Styles */}
         <style>{`

@@ -201,10 +201,15 @@ const Settings: React.FC<SettingsProps> = ({
                 </p>
                 <button
                   onClick={() => toggleNotification("lowStock")}
-                  className={`w-10 h-5 rounded-full p-0.5 transition-colors duration-200 ${notifications.lowStock ? "bg-emerald-500" : "bg-slate-300"}`}
+                  className={`w-10 h-5 rounded-full p-0.5 transition-all duration-300 feedback-tap ${notifications.lowStock ? "toggle-glass-active" : "toggle-glass"}`}
                 >
                   <div
-                    className={`w-4 h-4 rounded-full bg-white shadow-sm transform transition-transform duration-200 ${notifications.lowStock ? "translate-x-5" : "translate-x-0"}`}
+                    className={`w-4 h-4 rounded-full bg-white shadow-lg transform transition-all duration-300 ${notifications.lowStock ? "translate-x-5 scale-105" : "translate-x-0"}`}
+                    style={{
+                      boxShadow: notifications.lowStock
+                        ? "0 2px 8px rgba(16, 185, 129, 0.4)"
+                        : "0 1px 3px rgba(0, 0, 0, 0.2)",
+                    }}
                   />
                 </button>
               </div>
@@ -215,10 +220,15 @@ const Settings: React.FC<SettingsProps> = ({
                 </p>
                 <button
                   onClick={() => toggleNotification("dailySummary")}
-                  className={`w-10 h-5 rounded-full p-0.5 transition-colors duration-200 ${notifications.dailySummary ? "bg-emerald-500" : "bg-slate-300"}`}
+                  className={`w-10 h-5 rounded-full p-0.5 transition-all duration-300 feedback-tap ${notifications.dailySummary ? "toggle-glass-active" : "toggle-glass"}`}
                 >
                   <div
-                    className={`w-4 h-4 rounded-full bg-white shadow-sm transform transition-transform duration-200 ${notifications.dailySummary ? "translate-x-5" : "translate-x-0"}`}
+                    className={`w-4 h-4 rounded-full bg-white shadow-lg transform transition-all duration-300 ${notifications.dailySummary ? "translate-x-5 scale-105" : "translate-x-0"}`}
+                    style={{
+                      boxShadow: notifications.dailySummary
+                        ? "0 2px 8px rgba(16, 185, 129, 0.4)"
+                        : "0 1px 3px rgba(0, 0, 0, 0.2)",
+                    }}
                   />
                 </button>
               </div>
