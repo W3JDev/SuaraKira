@@ -24,8 +24,10 @@ const cleanAndParseJSON = (text: string) => {
       cleaned = cleaned.substring(firstBrace, lastBrace + 1);
     }
 
-    // 3. Remove non-printable characters that might break JSON.parse
-    cleaned = cleaned.replace(/[\x00-\x1F\x7F-\x9F]/g, "");
+    // 3. Robust clean: Remove ONLY control characters that are strictly invalid in JSON
+    // Preserving \n (0x0A) and \r (0x0D) is usually safer if the model escapes them, 
+    // but here we remove non-printables except whitespace to be safe against model hallucinations.
+    cleaned = cleaned.replace(/[\x00-\x09\x0B\x0C\x0E-\x1F\x7F-\x9F]/g, "");
 
     return JSON.parse(cleaned);
   } catch (e) {
@@ -40,8 +42,8 @@ const RECEIPT_SCHEMA = {
   properties: {
     merchantName: { type: Type.STRING, description: "Name of the shop, OR the main item name if this is a single voice command." },
     merchantAddress: { type: Type.STRING, description: "Address if available" },
-    invoiceNo: { type: Type.STRING, description: "Invoice/Receipt Number" },
-    date: { type: Type.STRING, description: "Date printed on receipt" },
+    invoiceNo: { type: Type.STRING, description: "Invoice/Receipt Number. Look for 'Inv', 'No', 'Ref', '#'." },
+    date: { type: Type.STRING, description: "Date printed on receipt." },
     category: { 
       type: Type.STRING, 
       description: "Category: 'Ingredients', 'Packaging', 'Utilities', 'Rent', 'Wages', 'Equipment', 'Stock', 'Food', 'Beverage'." 
@@ -63,27 +65,38 @@ const RECEIPT_SCHEMA = {
     tax: { type: Type.NUMBER, description: "Total tax amount (SST/GST)" },
     serviceCharge: { type: Type.NUMBER },
     rounding: { type: Type.NUMBER },
-    grandTotal: { type: Type.NUMBER, description: "Final total amount. MUST NOT BE 0 if a price is mentioned." },
-    type: { type: Type.STRING, enum: ["sale", "expense"], description: "Transaction type" }
+    grandTotal: { type: Type.NUMBER, description: "Final total amount. MUST NOT BE 0." },
+    type: { type: Type.STRING, enum: ["sale", "expense"], description: "Transaction type" },
+    originalTranscript: { type: Type.STRING, description: "The exact transcription of the audio input, if available." }
   },
-  required: ["merchantName", "grandTotal", "type", "items"]
+  required: ["grandTotal", "type", "items"]
 };
 
 // 1. Text/Audio Processing (Simple Schema)
 export const processTransactionInput = async (input: string | { audio: string, mime: string }, isAudio: boolean): Promise<ParsedResult> => {
+  
+  // Select Model: Flash Lite for Text (Speed), Flash for Audio (Native Multimodal)
+  const modelName = isAudio ? 'gemini-2.5-flash' : 'gemini-2.5-flash-lite';
+
   const SYSTEM_PROMPT_SIMPLE = `
   You are SuaraKira, an expert Malaysian accountant assistant. 
   
   CORE RULES:
   1. ANALYZE intent: "Sold/Jual" = sale, "Bought/Beli/Pay" = expense.
-  2. IF AUDIO/TEXT says "One Nasi Lemak 12 ringgit" or "Sold 1 Nasi Lemak":
+  2. LANGUAGE: Expect Manglish (Malaysian English) mixed with Malay.
+     - "Nasi Lemak satu" -> 1 Nasi Lemak
+     - "Teh O Ais ikat tepi" -> Teh O Ais
+     - "Gas habis" -> Expense (Gas Cylinder)
+  3. IF AUDIO/TEXT says "One Nasi Lemak 12 ringgit" or "Sold 1 Nasi Lemak":
      - merchantName: "Nasi Lemak" (Use the item name as the merchant/title if no shop name is spoken)
      - items: [{ description: "Nasi Lemak", quantity: 1, unitPrice: 12.00, total: 12.00 }]
      - grandTotal: 12.00
      - type: "sale"
-  3. NEVER return grandTotal: 0.00 if a price is mentioned.
-  4. Infer specific category (e.g., "Food", "Beverage") based on the item.
-  5. OUTPUT VALID JSON ONLY. Do not add markdown formatting or explanations.
+  4. NEVER return grandTotal: 0.00 if a price is mentioned.
+  5. Infer specific category (e.g., "Food", "Beverage") based on the item.
+  6. TRANSCRIPTION: If audio is provided, CAREFULLY listen and transcribe the exact Malay/Manglish words into 'originalTranscript'.
+  7. FORMATTING: Round ALL numbers (prices, totals) to EXACTLY 2 decimal places. Do NOT output high precision floats (e.g., use 3.00, not 3.00000004).
+  8. OUTPUT VALID JSON ONLY. Do not add markdown formatting or explanations.
   `;
 
   try {
@@ -97,7 +110,7 @@ export const processTransactionInput = async (input: string | { audio: string, m
       : { parts: [{ text: `Extract transaction details from this text: "${input}"` }] };
 
     const response = await getAi().models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: modelName,
       contents: contents,
       config: {
         systemInstruction: SYSTEM_PROMPT_SIMPLE,
@@ -126,18 +139,20 @@ export const processImageTransaction = async (base64Image: string, mimeType: str
   Use the following thought process to analyze the image, but output ONLY the final JSON object.
 
   1. GLOBAL CONTEXT & HEADER: 
-     - Aggressively search for Invoice/Receipt Numbers (keywords: "Inv", "No", "Rec", "#"). 
-     - Extract Date (check top and bottom of receipt).
-     - Identify Merchant Name.
+     - AGGRESSIVELY SEARCH for 'invoiceNo' (keywords: "Inv", "No", "Rec", "#").
+     - AGGRESSIVELY SEARCH for 'date' (check top, bottom, and margins).
+     - EXTRACT 'merchantName' (usually largest text at top).
+     - IDENTIFY 'grandTotal' (usually largest number at bottom).
 
   2. LINE ITEMS: 
      - Extract every line item (Description, Qty, Price, Total). Handle alignments carefully.
-     - FALLBACK: If line items are blurry, grouped, or unclear, INFER them based on context (e.g., "Mixed Groceries") or create a single item "Consolidated Items" with the verified subtotal. Do NOT return an empty items array.
-     - ESTIMATE COST: If possible, infer a likely 'estimatedUnitCost' (cost price) for items based on Malaysian market knowledge to help with profit analysis later.
+     - FALLBACK: If line items are blurry, grouped, or unclear, do NOT fail. Instead, create a single consolidated item (e.g., "Uncategorized Expense" or "Consolidated Items") with the verified 'grandTotal' as the price.
+     - ESTIMATE COST: If possible, infer a likely 'estimatedUnitCost' (cost price) for items based on Malaysian market knowledge.
 
   3. MATH CHECK: 
      - Verify that sum(items) + tax/service charge matches the Grand Total.
-     - CRITICAL: Ensure 'grandTotal' is the FINAL amount paid, distinguishing it from subtotal or cash tendered.
+     - CRITICAL: Ensure 'grandTotal' is the FINAL amount paid.
+     - FORMAT: Round all numbers to 2 decimal places.
 
   4. CLASSIFICATION: 
      - Determine if this is a 'sale' or 'expense'.
@@ -304,4 +319,5 @@ interface ParsedResult {
   rounding?: number;
   grandTotal: number;
   type: TransactionType;
+  originalTranscript?: string;
 }

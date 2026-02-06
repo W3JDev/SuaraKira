@@ -157,6 +157,9 @@ const App: React.FC = () => {
   // --- PRICE HISTORY & ANOMALY DETECTION ---
   const checkPriceAnomaly = (newItem: Transaction) => {
     if (newItem.type !== 'expense') return;
+    
+    // Ignore generic uncategorized items for price tracking
+    if (newItem.item.toLowerCase().includes('uncategorized') || newItem.item.toLowerCase().includes('consolidated')) return;
 
     // Find history of this item (fuzzy match)
     const history = transactions.filter(t => 
@@ -208,9 +211,15 @@ const App: React.FC = () => {
   };
 
   const processTransactionResult = (result: any) => {
-    let mainItemName = result.merchantName || result.item || "Unknown Item";
-    if (result.items && result.items.length > 0 && !result.merchantName) {
-        mainItemName = result.items[0].description;
+    let mainItemName = result.merchantName || result.item;
+    
+    // 1. Fallback for Unknown Items
+    if (!mainItemName || mainItemName.toLowerCase() === "unknown item") {
+       mainItemName = result.type === 'sale' ? "Uncategorized Sale" : "Uncategorized Expense";
+    } 
+    // 2. Use first item description if merchant is missing/unknown but items exist
+    else if (result.items && result.items.length > 0 && (!result.merchantName || result.merchantName.toLowerCase() === "unknown item")) {
+       mainItemName = result.items[0].description;
     }
 
     const newTransaction: Transaction = {
@@ -222,7 +231,7 @@ const App: React.FC = () => {
       total: result.grandTotal,
       type: result.type,
       timestamp: Date.now(),
-      originalTranscript: "Input",
+      originalTranscript: result.originalTranscript || "Input",
       receipt: {
         merchantName: result.merchantName,
         merchantAddress: result.merchantAddress,
@@ -250,12 +259,13 @@ const App: React.FC = () => {
   };
 
   const handleAudioSubmit = async (audioBlob: Blob) => {
+    // Increased timeout to 45s for slower connections/processing
     const timeoutId = setTimeout(() => {
       setAppState(AppState.ERROR);
       setProcessingMessage("Request timed out");
       showToast("Request timed out", "error");
       setTimeout(() => setAppState(AppState.IDLE), 2000);
-    }, 15000);
+    }, 45000);
 
     setAppState(AppState.PROCESSING);
     setProcessingMessage(t.processing);
@@ -311,7 +321,7 @@ const App: React.FC = () => {
          showToast("Image analysis timed out", "error");
          setAppState(AppState.IDLE);
        }
-    }, 30000);
+    }, 45000);
 
     setAppState(AppState.PROCESSING);
     setProcessingMessage("Deep Scanning Image..."); 
@@ -477,19 +487,21 @@ const App: React.FC = () => {
         t={t}
       />
 
-      <Settings 
-        isOpen={isSettingsOpen} 
-        onClose={() => setIsSettingsOpen(false)} 
-        onClearData={handleClearData}
-        isDarkMode={isDarkMode}
-        toggleTheme={handleToggleTheme}
-        notifications={notifications}
-        toggleNotification={handleToggleNotification}
-        lang={lang}
-        setLang={handleSetLanguage}
-        onReplayOnboarding={handleReplayOnboarding}
-        t={t}
-      />
+      <ErrorBoundary>
+        <Settings 
+          isOpen={isSettingsOpen} 
+          onClose={() => setIsSettingsOpen(false)} 
+          onClearData={handleClearData}
+          isDarkMode={isDarkMode}
+          toggleTheme={handleToggleTheme}
+          notifications={notifications}
+          toggleNotification={handleToggleNotification}
+          lang={lang}
+          setLang={handleSetLanguage}
+          onReplayOnboarding={handleReplayOnboarding}
+          t={t}
+        />
+      </ErrorBoundary>
       
       {/* Logout button hidden inside Settings, but logic is here */}
       {isSettingsOpen && (
@@ -504,11 +516,13 @@ const App: React.FC = () => {
       )}
 
       {selectedTransaction && (
-        <ReceiptModal 
-          transaction={selectedTransaction} 
-          onClose={() => setSelectedTransaction(null)}
-          onDelete={handleDeleteTransaction}
-        />
+        <ErrorBoundary>
+          <ReceiptModal 
+            transaction={selectedTransaction} 
+            onClose={() => setSelectedTransaction(null)}
+            onDelete={handleDeleteTransaction}
+          />
+        </ErrorBoundary>
       )}
       
     </div>

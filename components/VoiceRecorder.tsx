@@ -27,27 +27,29 @@ const playFeedbackSound = (type: 'start' | 'stop') => {
     const t = ctx.currentTime;
     
     if (type === 'start') {
-      // "Ding" - High pitch, quick decay
-      osc.frequency.setValueAtTime(500, t);
-      osc.frequency.exponentialRampToValueAtTime(1000, t + 0.1);
+      // Ascending "On" Tone (A4 -> A5)
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(440, t); 
+      osc.frequency.exponentialRampToValueAtTime(880, t + 0.15); 
       
       gain.gain.setValueAtTime(0, t);
       gain.gain.linearRampToValueAtTime(0.15, t + 0.05);
       gain.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
       
       osc.start(t);
-      osc.stop(t + 0.3);
+      osc.stop(t + 0.35);
     } else {
-      // "Dong" - Lower pitch, quick decay
-      osc.frequency.setValueAtTime(400, t);
-      osc.frequency.exponentialRampToValueAtTime(200, t + 0.1);
+      // Descending "Off" Tone (A5 -> A4)
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(880, t); 
+      osc.frequency.exponentialRampToValueAtTime(440, t + 0.15); 
 
       gain.gain.setValueAtTime(0, t);
       gain.gain.linearRampToValueAtTime(0.15, t + 0.05);
       gain.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
       
       osc.start(t);
-      osc.stop(t + 0.3);
+      osc.stop(t + 0.35);
     }
   } catch (e) {
     console.error("Audio feedback failed", e);
@@ -74,8 +76,25 @@ const InputBar: React.FC<InputBarProps> = ({ onAudioSubmit, onImageSubmit, onTex
       playFeedbackSound('start');
       if (navigator.vibrate) navigator.vibrate(50);
 
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
+      // Request high quality audio constraints
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          channelCount: 1
+        } 
+      });
+
+      // Explicitly set high-quality options for accurate AI transcription
+      let options: MediaRecorderOptions = {};
+      if (MediaRecorder.isTypeSupported("audio/webm;codecs=opus")) {
+        options = { mimeType: "audio/webm;codecs=opus", audioBitsPerSecond: 128000 };
+      } else if (MediaRecorder.isTypeSupported("audio/mp4")) {
+        options = { mimeType: "audio/mp4", audioBitsPerSecond: 128000 };
+      }
+      
+      const mediaRecorder = new MediaRecorder(stream, options);
 
       mediaRecorderRef.current = mediaRecorder;
       chunksRef.current = [];
@@ -85,7 +104,9 @@ const InputBar: React.FC<InputBarProps> = ({ onAudioSubmit, onImageSubmit, onTex
       };
 
       mediaRecorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: mediaRecorder.mimeType });
+        // Use the actual mime type resolved by the recorder
+        const mimeType = mediaRecorder.mimeType || 'audio/webm';
+        const blob = new Blob(chunksRef.current, { type: mimeType });
         onAudioSubmit(blob);
         stream.getTracks().forEach(track => track.stop());
         playFeedbackSound('stop');
@@ -98,7 +119,7 @@ const InputBar: React.FC<InputBarProps> = ({ onAudioSubmit, onImageSubmit, onTex
     } catch (err) {
       console.error("Mic Error:", err);
       setIsPreparing(false);
-      alert("Microphone access required.");
+      alert("Microphone access required. Please check your browser permissions.");
     }
   }, [appState, onAudioSubmit]);
 
@@ -132,9 +153,8 @@ const InputBar: React.FC<InputBarProps> = ({ onAudioSubmit, onImageSubmit, onTex
 
   // Touch handlers
   const handleTouchStart = (e: React.TouchEvent | React.MouseEvent) => {
-    // Only prevent default on touch to avoid scrolling while recording
     if ('touches' in e) {
-      // e.preventDefault(); // Removing preventDefault to allow click events to propagate if needed, but usually we want to block scroll
+       // Allow touch interaction
     }
     startRecording();
   };
@@ -145,11 +165,6 @@ const InputBar: React.FC<InputBarProps> = ({ onAudioSubmit, onImageSubmit, onTex
 
   return (
     <>
-      {/* 
-        Single File Input.
-        By NOT setting `capture="environment"`, mobile browsers will display 
-        a native menu offering "Camera", "Photo Library", or "Choose File".
-      */}
       <input 
         type="file" 
         ref={fileInputRef}
@@ -199,12 +214,10 @@ const InputBar: React.FC<InputBarProps> = ({ onAudioSubmit, onImageSubmit, onTex
           {(isRecording || isPreparing) && (
              <div className="absolute -top-16 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
                 <div className="flex flex-col items-center">
-                  <div className={`bg-red-500 text-white text-xs px-4 py-1.5 rounded-full shadow-lg font-bold transition-all duration-300 ${isPreparing ? 'opacity-80 scale-90' : 'opacity-100 scale-100'}`}>
+                  <div className={`bg-red-500 text-white text-xs px-4 py-1.5 rounded-full shadow-lg font-bold transition-all duration-300 flex items-center gap-2 ${isPreparing ? 'opacity-80 scale-90' : 'opacity-100 scale-100'}`}>
+                    <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
                     {isPreparing ? "Starting..." : t.listening}
                   </div>
-                  {isRecording && <div className="mt-1 w-12 h-1 bg-red-400/50 rounded-full overflow-hidden">
-                    <div className="h-full bg-red-500 animate-pulse w-full"></div>
-                  </div>}
                 </div>
              </div>
           )}

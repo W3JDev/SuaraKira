@@ -1,5 +1,4 @@
 import React, { ErrorInfo, ReactNode } from 'react';
-import { LoaderIcon } from './Icons';
 
 interface Props {
   children?: ReactNode;
@@ -12,10 +11,9 @@ interface State {
 }
 
 class ErrorBoundary extends React.Component<Props, State> {
-  constructor(props: Props) {
-    super(props);
-    this.state = { hasError: false };
-  }
+  state: State = {
+    hasError: false
+  };
 
   static getDerivedStateFromError(error: Error): State {
     return { hasError: true, error };
