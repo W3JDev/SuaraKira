@@ -1,59 +1,343 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <meta name="author" content="w3jdev" />
-    <meta property="og:site_name" content="SuaraKira by w3jdev" />
-    <title>SuaraKira - Voice Accounting</title>
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+
+    <!-- SEO Meta Tags -->
+    <meta
+      name="description"
+      content="SuaraKira - AI-powered financial tracking for Malaysian businesses. Voice-first, multilingual accounting system in English, Malay, Tamil, and Mandarin."
+    />
+    <meta
+      name="keywords"
+      content="accounting, malaysia, voice entry, AI, supabase, gemini, financial tracking, business, multilingual"
+    />
+    <meta name="author" content="W3JDEV - w3jdev.com" />
+    <meta name="robots" content="index, follow" />
+
+    <!-- PWA Meta Tags -->
+    <meta name="application-name" content="SuaraKira" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="SuaraKira" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="theme-color" content="#6366f1" />
+    <meta name="msapplication-TileColor" content="#6366f1" />
+    <meta name="msapplication-tap-highlight" content="no" />
+
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="SuaraKira - Voice-Powered Accounting" />
+    <meta
+      property="og:description"
+      content="AI-powered financial tracking for Malaysian businesses. Voice-first, multilingual, and built for operators who value precision."
+    />
+    <meta property="og:site_name" content="SuaraKira by W3JDEV" />
+    <meta property="og:url" content="https://suarakira.com" />
+    <meta property="og:image" content="/og-image.png" />
+    <meta property="og:locale" content="en_MY" />
+
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="SuaraKira - Voice-Powered Accounting" />
+    <meta
+      name="twitter:description"
+      content="AI-powered financial tracking for Malaysian businesses"
+    />
+    <meta name="twitter:image" content="/twitter-card.png" />
+    <meta name="twitter:creator" content="@w3jdev" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="shortcut icon" href="/favicon.ico" />
+
+    <!-- Apple Touch Icons -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
+    <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.png" />
+    <link rel="apple-touch-icon" sizes="144x144" href="/icons/icon-144x144.png" />
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- Preconnect for Performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://cdn.tailwindcss.com" />
+
+    <title>SuaraKira - Voice-Powered Accounting by W3JDEV</title>
+
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Google Fonts -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+
     <style>
       body {
-        font-family: 'Inter', sans-serif;
-        background-color: #f8fafc; /* Slate 50 */
+        font-family: "Inter", sans-serif;
+        background-color: #f8fafc;
         -webkit-tap-highlight-color: transparent;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
       }
+
       /* Hide scrollbar for clean mobile look */
       .no-scrollbar::-webkit-scrollbar {
         display: none;
       }
       .no-scrollbar {
-        -ms-overflow-style: none;  /* IE and Edge */
-        scrollbar-width: none;  /* Firefox */
+        -ms-overflow-style: none;
+        scrollbar-width: none;
       }
+
       /* Pulse animation for recording */
       @keyframes ripple {
-        0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
-        70% { box-shadow: 0 0 0 20px rgba(16, 185, 129, 0); }
-        100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        0% {
+          box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+        }
+        70% {
+          box-shadow: 0 0 0 20px rgba(16, 185, 129, 0);
+        }
+        100% {
+          box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+        }
       }
       .animate-ripple {
         animation: ripple 1.5s infinite cubic-bezier(0.4, 0, 0.6, 1);
       }
+
+      /* Gradient animations */
+      @keyframes gradient {
+        0% {
+          background-position: 0% 50%;
+        }
+        50% {
+          background-position: 100% 50%;
+        }
+        100% {
+          background-position: 0% 50%;
+        }
+      }
+      .animate-gradient {
+        background-size: 200% 200%;
+        animation: gradient 15s ease infinite;
+      }
+
+      /* Loading spinner */
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .animate-spin {
+        animation: spin 1s linear infinite;
+      }
+
+      /* PWA Install Prompt */
+      .pwa-install-prompt {
+        position: fixed;
+        bottom: 80px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 1000;
+        max-width: 90%;
+        width: 400px;
+      }
+
+      /* Branding Badge */
+      .w3jdev-badge {
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        transition: all 0.3s ease;
+      }
+      .w3jdev-badge:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.4);
+      }
     </style>
-  <script type="importmap">
-{
-  "imports": {
-    "react/": "https://esm.sh/react@18.2.0/",
-    "react": "https://esm.sh/react@18.2.0",
-    "react-dom/": "https://esm.sh/react-dom@18.2.0/",
-    "react-dom": "https://esm.sh/react-dom@18.2.0",
-    "@google/genai": "https://esm.sh/@google/genai",
-    "recharts": "https://esm.sh/recharts@2.12.0?external=react,react-dom",
-    "framer-motion": "https://esm.sh/framer-motion@10.16.4?external=react,react-dom",
-    "clsx": "https://esm.sh/clsx"
-  }
-}
-</script>
-<script>
-  // Polyfill process.env for browser environment to prevent crashes
-  window.process = window.process || {};
-  window.process.env = window.process.env || {};
-</script>
-</head>
+
+    <!-- Import Map for ESM Modules -->
+    <script type="importmap">
+      {
+        "imports": {
+          "react/": "https://esm.sh/react@18.2.0/",
+          "react": "https://esm.sh/react@18.2.0",
+          "react-dom/": "https://esm.sh/react-dom@18.2.0/",
+          "react-dom": "https://esm.sh/react-dom@18.2.0",
+          "@google/genai": "https://esm.sh/@google/genai",
+          "recharts": "https://esm.sh/recharts@2.12.0?external=react,react-dom",
+          "framer-motion": "https://esm.sh/framer-motion@10.16.4?external=react,react-dom",
+          "clsx": "https://esm.sh/clsx"
+        }
+      }
+    </script>
+
+    <!-- Environment Polyfill -->
+    <script>
+      // Polyfill process.env for browser environment
+      window.process = window.process || {};
+      window.process.env = window.process.env || {};
+
+      // PWA Install Handler
+      let deferredPrompt;
+
+      window.addEventListener("beforeinstallprompt", (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+
+        // Show custom install UI
+        const installPrompt = document.getElementById("pwa-install-prompt");
+        if (installPrompt) {
+          installPrompt.style.display = "block";
+        }
+      });
+
+      window.addEventListener("appinstalled", () => {
+        console.log("✅ SuaraKira PWA installed successfully");
+        deferredPrompt = null;
+      });
+
+      // Service Worker Registration
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker
+            .register("/sw.js")
+            .then((registration) => {
+              console.log("✅ Service Worker registered:", registration.scope);
+            })
+            .catch((error) => {
+              console.error("❌ Service Worker registration failed:", error);
+            });
+        });
+      }
+
+      // Analytics (optional - replace with your tracking ID)
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+
+      // Made by W3JDEV - Console Branding
+      console.log("%c🎙️ SuaraKira", "font-size: 24px; font-weight: bold; color: #6366f1;");
+      console.log("%cMade with ❤️ by W3JDEV", "font-size: 14px; color: #8b5cf6;");
+      console.log("%c🌐 https://w3jdev.com", "font-size: 12px; color: #6b7280;");
+      console.log(
+        "%cIndustrial AI Solutions for Global Operators",
+        "font-size: 10px; color: #9ca3af; font-style: italic;",
+      );
+    </script>
+  </head>
+
   <body>
+    <!-- Main App Container -->
     <div id="root"></div>
+
+    <!-- PWA Install Prompt (Hidden by default) -->
+    <div id="pwa-install-prompt" class="pwa-install-prompt" style="display: none">
+      <div
+        class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 border border-indigo-200 dark:border-indigo-700"
+      >
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-3">
+            <div
+              class="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center"
+            >
+              <span class="text-2xl">🎙️</span>
+            </div>
+            <div>
+              <h3 class="font-bol</div>d text-gray-900 dark:text-white">Install SuaraKira</h3>
+              <p class="text-sm text-gray-600 dark:text-gray-400">
+                Quick access from your home screen
+              </p>
+            </div>
+          </div>
+          <button
+            onclick="document.getElementById('pwa-install-prompt').style.display = 'none'"
+            class="text-gray-400 hover:text-gray-600"
+          >
+            ✕
+          </button>
+        </div>
+        <button
+          onclick="installPWA()"
+          class="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-lg font-semibold shadow-lg transition-all"
+        >
+          📲 Install Now
+        </button>
+      </div>
+    </div>
+
+    <!-- PWA Install Function -->
+    <script>
+      function installPWA() {
+        if (deferredPrompt) {
+          deferredPrompt.prompt();
+          deferredPrompt.userChoice.then((choiceResult) => {
+            if (choiceResult.outcome === "accepted") {
+              console.log("✅ User accepted the install prompt");
+            }
+            deferredPrompt = null;
+            document.getElementById("pwa-install-prompt").style.display = "none";
+          });
+        }
+      }
+    </script>
+
+    <!-- React App Entry Point -->
     <script type="module" src="./index.tsx"></script>
+
+    <!-- Noscript Fallback -->
+    <noscript>
+      <div
+        style="
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          min-height: 100vh;
+          background: linear-gradient(to bottom right, #eef2ff, #faf5ff);
+          padding: 20px;
+        "
+      >
+        <div
+          style="
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1);
+            max-width: 500px;
+            text-align: center;
+          "
+        >
+          <div style="font-size: 48px; margin-bottom: 20px">🎙️</div>
+          <h1 style="color: #6366f1; font-size: 32px; margin-bottom: 10px">SuaraKira</h1>
+          <p style="color: #6b7280; font-size: 18px; margin-bottom: 20px">
+            Voice-Powered Accounting
+          </p>
+          <p style="color: #ef4444; font-size: 14px; margin-bottom: 30px">
+            ⚠️ JavaScript is required to run this application.
+          </p>
+          <p style="color: #9ca3af; font-size: 12px">
+            Please enable JavaScript in your browser settings and reload the page.
+          </p>
+          <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb" />
+          <p style="color: #6b7280; font-size: 12px">
+            Made with ❤️ by
+            <a
+              href="https://w3jdev.com"
+              style="color: #6366f1; text-decoration: none; font-weight: 600"
+              >W3JDEV</a
+            >
+          </p>
+        </div>
+      </div>
+    </noscript>
   </body>
 </html>
