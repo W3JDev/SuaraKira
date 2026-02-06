@@ -37,28 +37,28 @@ const Dashboard: React.FC<DashboardProps> = ({
   const isPositive = netAmount >= 0;
 
   return (
-    <div className="w-full max-w-md mx-auto space-y-6 pb-40">
+    <div className="w-full max-w-md mx-auto space-y-3 pb-24">
       {/* Header Stats - Context Aware */}
       <div
-        className={`${isPositive ? "bg-gradient-to-br from-emerald-600 to-teal-700" : "bg-gradient-to-br from-red-600 to-rose-700"} dark:${isPositive ? "from-emerald-700 to-teal-800" : "from-red-700 to-rose-800"} text-white rounded-3xl p-6 shadow-xl relative overflow-hidden transition-all`}
+        className={`${isPositive ? "bg-gradient-to-br from-emerald-600 to-teal-700" : "bg-gradient-to-br from-red-600 to-rose-700"} dark:${isPositive ? "from-emerald-700 to-teal-800" : "from-red-700 to-rose-800"} text-white rounded-2xl p-4 shadow-xl relative overflow-hidden transition-all`}
       >
         <div className="absolute top-0 right-0 opacity-10 transform translate-x-1/4 -translate-y-1/4">
-          <WalletIcon className="w-48 h-48" />
+          <WalletIcon className="w-32 h-32" />
         </div>
         <div className="relative z-10">
-          <p className="text-white/80 text-xs font-medium mb-1 uppercase tracking-wider">
+          <p className="text-white/80 text-xs font-medium mb-0.5 uppercase tracking-wider">
             {netLabel} Today
           </p>
-          <h2 className="text-5xl font-bold tracking-tight mb-1">
+          <h2 className="text-3xl font-bold tracking-tight mb-1">
             {isPositive ? "+" : ""} RM {Math.abs(netAmount).toFixed(2)}
           </h2>
-          <p className="text-white/60 text-xs mb-6">
+          <p className="text-white/60 text-xs mb-3">
             {stats.transactionCount} transaction{stats.transactionCount !== 1 ? "s" : ""} •{" "}
             {isPersonal ? "Personal" : "Business"} Mode
           </p>
 
           {/* Cash Flow Breakdown */}
-          <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 space-y-3">
+          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 space-y-2">
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-emerald-300"></div>
@@ -76,7 +76,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             </div>
 
             {/* Visual Cash Flow Bar */}
-            <div className="mt-3 pt-3 border-t border-white/20">
+            <div className="mt-2 pt-2 border-t border-white/20">
               <div className="flex h-2 rounded-full overflow-hidden bg-white/20">
                 {positiveAmount > 0 && (
                   <div
@@ -113,15 +113,15 @@ const Dashboard: React.FC<DashboardProps> = ({
       <button
         onClick={onGenerateInsights}
         disabled={isAnalyzing}
-        className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 dark:from-violet-700 dark:to-indigo-700 text-white p-4 rounded-2xl shadow-lg flex items-center justify-between group active:scale-[0.98] transition-all"
+        className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 dark:from-violet-700 dark:to-indigo-700 text-white p-3 rounded-xl shadow-lg flex items-center justify-between group active:scale-[0.98] transition-all"
       >
-        <div className="flex items-center gap-3">
-          <div className="bg-white/20 p-2 rounded-full">
-            <SparklesIcon className={`w-5 h-5 ${isAnalyzing ? "animate-spin" : ""}`} />
+        <div className="flex items-center gap-2">
+          <div className="bg-white/20 p-1.5 rounded-full">
+            <SparklesIcon className={`w-4 h-4 ${isAnalyzing ? "animate-spin" : ""}`} />
           </div>
           <div className="text-left">
-            <p className="font-bold text-sm">{t.generateReport}</p>
-            <p className="text-xs text-indigo-100 opacity-80">Analyze anomalies & profit margins</p>
+            <p className="font-semibold text-sm">{t.generateReport}</p>
+            <p className="text-xs text-indigo-100 opacity-80">AI insights & analysis</p>
           </div>
         </div>
         <div className="text-indigo-100 group-hover:translate-x-1 transition-transform">→</div>
@@ -321,21 +321,21 @@ const Dashboard: React.FC<DashboardProps> = ({
 
       {/* Recent Activity Section */}
       <div>
-        <div className="flex items-center justify-between mb-4 px-2">
-          <h3 className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
-            <ReceiptIcon className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+        <div className="flex items-center justify-between mb-3 px-1">
+          <h3 className="text-base font-bold text-slate-800 dark:text-white flex items-center gap-2">
+            <ReceiptIcon className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             {t.recentActivity}
           </h3>
-          <span className="text-xs text-slate-500 dark:text-slate-400 font-medium bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-full">
+          <span className="text-xs text-slate-500 dark:text-slate-400 font-medium bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full">
             {t.tapToView}
           </span>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-2">
           {recentTransactions.length === 0 ? (
-            <div className="text-center py-12 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm transition-colors">
-              <div className="bg-slate-50 dark:bg-slate-700 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3">
-                <ReceiptIcon className="w-8 h-8 text-slate-300 dark:text-slate-500" />
+            <div className="text-center py-8 bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm transition-colors">
+              <div className="bg-slate-50 dark:bg-slate-700 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2">
+                <ReceiptIcon className="w-6 h-6 text-slate-300 dark:text-slate-500" />
               </div>
               <p className="text-slate-400 dark:text-slate-500 text-sm">{t.noTransTitle}</p>
               <p className="text-slate-400 dark:text-slate-500 text-xs mt-1">{t.noTransDesc}</p>
@@ -345,20 +345,20 @@ const Dashboard: React.FC<DashboardProps> = ({
               <div
                 key={t.id}
                 onClick={() => onEditTransaction(t)}
-                className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm flex items-center justify-between hover:shadow-md transition-all cursor-pointer active:bg-slate-50 dark:active:bg-slate-700"
+                className="bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm flex items-center justify-between hover:shadow-md transition-all cursor-pointer active:bg-slate-50 dark:active:bg-slate-700"
               >
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2.5">
                   <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
+                    className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
                       t.type === "sale"
                         ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400"
                         : "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400"
                     }`}
                   >
                     {t.type === "sale" ? (
-                      <TrendingUpIcon className="w-5 h-5" />
+                      <TrendingUpIcon className="w-4 h-4" />
                     ) : (
-                      <WalletIcon className="w-5 h-5" />
+                      <WalletIcon className="w-4 h-4" />
                     )}
                   </div>
                   <div>

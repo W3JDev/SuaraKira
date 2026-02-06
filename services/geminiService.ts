@@ -1,5 +1,6 @@
 import { GoogleGenAI, Type, Chat } from "@google/genai";
 import { TransactionType, Transaction, FinancialInsight, ChatMessage } from "../types";
+import { Language } from "../translations";
 
 let ai: GoogleGenAI | null = null;
 
@@ -75,6 +76,7 @@ export const startFinancialChat = (
   transactions: Transaction[],
   userRole: string,
   userName: string,
+  language: Language = "en",
 ) => {
   // Compress transaction history for context window
   const contextData = transactions
@@ -84,9 +86,21 @@ export const startFinancialChat = (
     )
     .join("\n");
 
+  const languageInstructions = {
+    en: "Respond in English only",
+    ms: "Respond in Bahasa Malaysia (Malay) only. Use proper Malay language.",
+    bn: "Respond in Bengali (বাংলা) only. Use Bengali script and language.",
+    ta: "Respond in Tamil (தமிழ்) only. Use Tamil script and language.",
+    zh: "Respond in Simplified Chinese (中文) only. Use Chinese characters.",
+  };
+
   const SYSTEM_INSTRUCTION = `
   You are 'SuaraKira', a dedicated Financial AI Assistant for a Malaysian business.
   User Role: ${userRole} (${userName}).
+
+  CRITICAL LANGUAGE INSTRUCTION: ${languageInstructions[language]}
+  Your ENTIRE response MUST be in ${language === "en" ? "English" : language === "ms" ? "Bahasa Malaysia" : language === "bn" ? "Bengali" : language === "ta" ? "Tamil" : "Chinese"}.
+  Do NOT mix languages. Do NOT use English unless the user's language is English.
 
   YOUR CAPABILITIES:
   1. QUERY: Answer questions about the provided transaction history (e.g., "How much satay sold yesterday?").
@@ -97,7 +111,7 @@ export const startFinancialChat = (
   ${contextData}
 
   RULES:
-  - Language: Adapt to the user's language (English, Malay, Manglish, Tamil, Mandarin).
+  - ALL responses must be in the user's language (${languageInstructions[language]}).
   - Currency: RM (Ringgit Malaysia).
   - Accuracy: If specific data is missing for a query, say "I don't have that record."
   - Transaction Entry: If the user input looks like a transaction (e.g., "Sold 5 nasi lemak"), respond with a SPECIAL JSON BLOCK:
@@ -356,7 +370,10 @@ export const processImageTransaction = async (
 };
 
 // 3. Insights (Unchanged)
-export const generateInsights = async (transactions: Transaction[]): Promise<FinancialInsight> => {
+export const generateInsights = async (
+  transactions: Transaction[],
+  language: Language = "en",
+): Promise<FinancialInsight> => {
   try {
     const simpleData = transactions.map((t) => ({
       item: t.item,
@@ -368,12 +385,25 @@ export const generateInsights = async (transactions: Transaction[]): Promise<Fin
 
     const dataContext = JSON.stringify(simpleData.slice(0, 100));
 
+    const languageInstructions = {
+      en: "Respond in English only",
+      ms: "Respond in Bahasa Malaysia (Malay) only",
+      bn: "Respond in Bengali (বাংলা) only",
+      ta: "Respond in Tamil (தமிழ்) only",
+      zh: "Respond in Simplified Chinese (中文) only",
+    };
+
     const response = await getAi().models.generateContent({
       model: "gemini-3-pro-preview",
       contents: {
         parts: [
           {
-            text: `Act as a CFO for a Malaysian Hawker. Analyze: ${dataContext}`,
+            text: `Act as a CFO for a Malaysian business. ${languageInstructions[language]}.
+
+ALL text in your response MUST be in ${language === "en" ? "English" : language === "ms" ? "Bahasa Malaysia" : language === "bn" ? "Bengali" : language === "ta" ? "Tamil" : "Chinese"}.
+This includes: financialHealth, anomaly descriptions, advice, and all other text fields.
+
+Analyze: ${dataContext}`,
           },
         ],
       },

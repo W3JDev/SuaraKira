@@ -339,14 +339,21 @@ export const seedDemoData = async (): Promise<Transaction[]> => {
   }
 };
 
-export const getDailyStats = (
+export const getDateRangeStats = (
   transactions: Transaction[],
   useCase: "personal" | "business" = "business",
+  startDate?: Date,
+  endDate?: Date,
 ): DailyStats => {
-  const now = new Date();
-  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  let filteredTransactions = transactions;
 
-  const todayTransactions = transactions.filter((t) => t.timestamp >= startOfDay);
+  if (startDate && endDate) {
+    const start = startDate.getTime();
+    const end = endDate.getTime();
+    filteredTransactions = transactions.filter((t) => t.timestamp >= start && t.timestamp <= end);
+  }
+
+  const todayTransactions = filteredTransactions;
 
   const stats = todayTransactions.reduce(
     (acc, curr) => {
@@ -382,6 +389,60 @@ export const getDailyStats = (
   }
 
   return stats;
+};
+
+// Helper: Get stats for today only
+export const getDailyStats = (
+  transactions: Transaction[],
+  useCase: "personal" | "business" = "business",
+): DailyStats => {
+  const now = new Date();
+  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const endOfDay = new Date(startOfDay);
+  endOfDay.setHours(23, 59, 59, 999);
+
+  return getDateRangeStats(transactions, useCase, startOfDay, endOfDay);
+};
+
+// Helper: Get stats for this week
+export const getWeekStats = (
+  transactions: Transaction[],
+  useCase: "personal" | "business" = "business",
+): DailyStats => {
+  const now = new Date();
+  const startOfWeek = new Date(now);
+  startOfWeek.setDate(now.getDate() - now.getDay()); // Sunday
+  startOfWeek.setHours(0, 0, 0, 0);
+
+  const endOfWeek = new Date(startOfWeek);
+  endOfWeek.setDate(startOfWeek.getDate() + 6);
+  endOfWeek.setHours(23, 59, 59, 999);
+
+  return getDateRangeStats(transactions, useCase, startOfWeek, endOfWeek);
+};
+
+// Helper: Get stats for this month
+export const getMonthStats = (
+  transactions: Transaction[],
+  useCase: "personal" | "business" = "business",
+): DailyStats => {
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+
+  return getDateRangeStats(transactions, useCase, startOfMonth, endOfMonth);
+};
+
+// Helper: Get stats for this year
+export const getYearStats = (
+  transactions: Transaction[],
+  useCase: "personal" | "business" = "business",
+): DailyStats => {
+  const now = new Date();
+  const startOfYear = new Date(now.getFullYear(), 0, 1);
+  const endOfYear = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
+
+  return getDateRangeStats(transactions, useCase, startOfYear, endOfYear);
 };
 
 // Realtime subscription helper
