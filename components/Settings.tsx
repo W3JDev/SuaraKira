@@ -7,6 +7,7 @@ interface SettingsProps {
   isOpen: boolean;
   onClose: () => void;
   onClearData: () => void;
+  onLogout: () => void;
   isDarkMode: boolean;
   toggleTheme: () => void;
   notifications: {
@@ -26,6 +27,7 @@ const Settings: React.FC<SettingsProps> = ({
   isOpen,
   onClose,
   onClearData,
+  onLogout,
   isDarkMode,
   toggleTheme,
   notifications,
@@ -207,18 +209,37 @@ const Settings: React.FC<SettingsProps> = ({
                 onClick={() => {
                   if (
                     window.confirm(
-                      "Are you sure? This will delete all transaction history on this device.",
+                      "⚠️ PERMANENT DELETION WARNING\n\nThis will DELETE all transactions from the DATABASE (Supabase).\n\n✅ What gets deleted:\n  • All your transaction records\n  • Cannot be recovered\n\n❌ This is NOT clearing browser cache!\n❌ This is PERMANENT!\n\nAre you absolutely sure?",
                     )
                   ) {
-                    onClearData();
-                    onClose();
+                    const confirmText = window.prompt("Type DELETE to confirm:");
+                    if (confirmText === "DELETE") {
+                      onClearData();
+                      onClose();
+                    } else {
+                      alert("Deletion cancelled. Your data is safe.");
+                    }
                   }
                 }}
                 className="w-full py-3 px-4 bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 font-medium rounded-xl hover:bg-red-100 dark:hover:bg-red-900/20 transition-colors text-sm text-left flex items-center justify-between"
               >
                 {t.clearData}
-                <span className="text-xs bg-red-100 dark:bg-red-900/30 px-2 py-1 rounded">
-                  Local Storage
+                <span className="text-xs bg-red-600 text-white px-2 py-1 rounded">
+                  ⚠️ Permanent
+                </span>
+              </button>
+
+              <button
+                onClick={() => {
+                  if (window.confirm("Are you sure you want to logout?")) {
+                    onLogout();
+                  }
+                }}
+                className="w-full py-3 px-4 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors text-sm text-left flex items-center justify-between"
+              >
+                🚪 Logout
+                <span className="text-xs bg-slate-200 dark:bg-slate-700 px-2 py-1 rounded">
+                  Sign Out
                 </span>
               </button>
             </div>

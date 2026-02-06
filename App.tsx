@@ -8,6 +8,9 @@ import ReceiptModal from "./components/ReceiptModal";
 import ChatAssistant from "./components/ChatAssistant";
 import TransactionForm from "./components/TransactionForm";
 import AuthPage from "./pages/AuthPage";
+import LandingPage from "./pages/LandingPage";
+import BrandedFooter from "./components/BrandedFooter";
+import OrganizationOnboarding from "./components/OrganizationOnboarding";
 import ToastContainer, { useToast } from "./components/Toast";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { SettingsIcon, ListIcon, ChartIcon, SparklesIcon } from "./components/Icons";
@@ -22,6 +25,8 @@ const App: React.FC = () => {
   const [session, setSession] = useState<{ user: { email: string } } | null>(null);
   const [currentRole, setCurrentRole] = useState<UserRole>("admin");
   const [currentUser, setCurrentUser] = useState<string>("Boss");
+  const [showLandingPage, setShowLandingPage] = useState(false);
+  const [needsOrgOnboarding, setNeedsOrgOnboarding] = useState(false);
 
   // App State
   const [appState, setAppState] = useState<AppState>(AppState.IDLE);
@@ -72,6 +77,8 @@ const App: React.FC = () => {
       setSession(session);
       if (session) {
         initializeUser();
+      } else {
+        setShowLandingPage(true);
       }
     });
 
@@ -88,19 +95,40 @@ const App: React.FC = () => {
   }, []);
 
   const initializeUser = async () => {
-    const role = await db.getCurrentRole();
-    const user = await db.getCurrentUser();
-    setCurrentRole(role);
-    setCurrentUser(user);
-    loadData(role);
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
 
-    // Setup realtime subscription
-    const unsubscribe = db.subscribeToTransactions((newTransactions) => {
-      setTransactions(newTransactions);
-      setStats(db.getDailyStats(newTransactions));
-    });
+      // Check if user has organization
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single();
 
-    return unsubscribe;
+      if (!profile || !profile.organization_id) {
+        setNeedsOrgOnboarding(true);
+        return;
+      }
+
+      const role = await db.getCurrentRole();
+      const userName = await db.getCurrentUser();
+      setCurrentRole(role);
+      setCurrentUser(userName);
+      loadData(role);
+
+      // Setup realtime subscription
+      const unsubscribe = db.subscribeToTransactions((newTransactions) => {
+        setTransactions(newTransactions);
+        setStats(db.getDailyStats(newTransactions));
+      });
+
+      return unsubscribe;
+    } catch (error) {
+      console.error("Error initializing user:", error);
+    }
   };
 
   const loadData = async (role: UserRole) => {
@@ -122,6 +150,28 @@ const App: React.FC = () => {
   const handleSetEntryMode = (mode: EntryMode) => {
     setEntryMode(mode);
     localStorage.setItem("suarakira_entry_mode", mode);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      setSession(null);
+      setTransactions([]);
+      setShowLandingPage(true);
+      showToast("Logged out successfully", "success");
+    } catch (error) {
+      console.error("Logout error:", error);
+      showToast("Failed to logout", "error");
+    }
+  };
+
+  const handleGetStarted = () => {
+    setShowLandingPage(false);
+  };
+
+  const handleOrgOnboardingComplete = () => {
+    setNeedsOrgOnboarding(false);
+    initializeUser();
   };
 
   const handleSwitchRole = async () => {
@@ -298,9 +348,19 @@ const App: React.FC = () => {
     }
   };
 
-  if (!session)
+  if (!session) {
+    if (showLandingPage) {
+      return (
+        <ErrorBoundary>
+          <ToastContainer toasts={toasts} removeToast={removeToast} />
+          <LandingPage onGetStarted={handleGetStarted} />
+        </ErrorBoundary>
+      );
+    }
+
     return (
       <ErrorBoundary>
+        <ToastContainer toasts={toasts} removeToast={removeToast} />
         <AuthPage
           onLogin={() => {
             // Session will be set by auth state listener
@@ -308,6 +368,20 @@ const App: React.FC = () => {
         />
       </ErrorBoundary>
     );
+  }
+
+  if (needsOrgOnboarding && session) {
+    return (
+      <ErrorBoundary>
+        <ToastContainer toasts={toasts} removeToast={removeToast} />
+        <OrganizationOnboarding
+          userEmail={session.user.email}
+          userName={currentUser}
+          onComplete={handleOrgOnboardingComplete}
+        />
+      </ErrorBoundary>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 pb-20">
@@ -423,6 +497,7 @@ const App: React.FC = () => {
           await db.clearTransactions();
           loadData(currentRole);
         }}
+        onLogout={handleLogout}
         isDarkMode={isDarkMode}
         toggleTheme={handleToggleTheme}
         notifications={notifications}
@@ -462,6 +537,9 @@ const App: React.FC = () => {
       )}
 
       {showOnboarding && <Onboarding onComplete={() => setShowOnboarding(false)} />}
+
+      {/* Branded Footer */}
+      <BrandedFooter />
     </div>
   );
 
