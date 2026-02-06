@@ -1,11 +1,13 @@
 export type TransactionType = "sale" | "expense";
 export type UserRole = "admin" | "staff";
+export type EntryMode = "expense-only" | "income-only" | "both";
 
 export interface UserProfile {
   id: string;
   name: string;
   role: UserRole;
   email: string;
+  entryMode?: EntryMode; // User's preferred entry mode
 }
 
 export interface ReceiptItem {

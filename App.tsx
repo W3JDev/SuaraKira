@@ -11,7 +11,7 @@ import AuthPage from "./pages/AuthPage";
 import ToastContainer, { useToast } from "./components/Toast";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { SettingsIcon, ListIcon, ChartIcon, SparklesIcon } from "./components/Icons";
-import { AppState, Transaction, DailyStats, FinancialInsight, UserRole } from "./types";
+import { AppState, Transaction, DailyStats, FinancialInsight, UserRole, EntryMode } from "./types";
 import * as db from "./services/db";
 import * as gemini from "./services/geminiService";
 import { translations, Language } from "./translations";
@@ -42,12 +42,18 @@ const App: React.FC = () => {
   // Transaction Review State
   const [reviewData, setReviewData] = useState<Partial<Transaction> | null>(null);
 
+  // Button disable state to prevent double-tap
+  const [isSaving, setIsSaving] = useState(false);
+
   // Settings State
   const [isDarkMode, setIsDarkMode] = useState<boolean>(
     () => localStorage.getItem("suarakira_theme") === "dark",
   );
   const [lang, setLang] = useState<Language>(
     () => (localStorage.getItem("suarakira_lang") as Language) || "en",
+  );
+  const [entryMode, setEntryMode] = useState<EntryMode>(
+    () => (localStorage.getItem("suarakira_entry_mode") as EntryMode) || "both",
   );
   const [notifications, setNotifications] = useState({
     lowStock: localStorage.getItem("suarakira_notif_lowstock") === "true",
@@ -113,6 +119,11 @@ const App: React.FC = () => {
     });
   };
 
+  const handleSetEntryMode = (mode: EntryMode) => {
+    setEntryMode(mode);
+    localStorage.setItem("suarakira_entry_mode", mode);
+  };
+
   const handleSwitchRole = async () => {
     const newRole = currentRole === "admin" ? "staff" : "admin";
 
@@ -174,7 +185,11 @@ const App: React.FC = () => {
   };
 
   const handleSaveTransaction = async (transaction: Transaction) => {
+    // PREVENT DOUBLE-TAP
+    if (isSaving) return;
+
     try {
+      setIsSaving(true);
       const updatedTransactions = await db.saveTransaction(transaction);
       setTransactions(updatedTransactions);
       setStats(db.getDailyStats(updatedTransactions));
@@ -183,6 +198,9 @@ const App: React.FC = () => {
     } catch (error) {
       showToast("Failed to save transaction", "error");
       console.error(error);
+    } finally {
+      // Re-enable after 1 second to prevent rapid double-taps
+      setTimeout(() => setIsSaving(false), 1000);
     }
   };
 
@@ -228,6 +246,8 @@ const App: React.FC = () => {
 
   // Manual entry trigger
   const handleManualEntry = () => {
+    if (isSaving) return; // Prevent double-tap
+
     setReviewData({
       id: Date.now().toString(),
       type: "sale",
@@ -241,7 +261,41 @@ const App: React.FC = () => {
 
   // Chat open trigger
   const handleChatOpen = () => {
+    if (isSaving) return; // Prevent double-tap
     setIsChatOpen(true);
+  };
+
+  // Direct transaction add from chat (no review form)
+  const handleDirectTransactionAdd = async (transaction: Partial<Transaction>) => {
+    // PREVENT DOUBLE-TAP
+    if (isSaving) return;
+
+    try {
+      setIsSaving(true);
+      const fullTransaction: Transaction = {
+        id: transaction.id || Date.now().toString(),
+        item: transaction.item || "Transaction",
+        category: transaction.category || "Uncategorized",
+        quantity: transaction.quantity || 1,
+        price: transaction.price || 0,
+        total: transaction.total || 0,
+        type: transaction.type || "expense",
+        timestamp: transaction.timestamp || Date.now(),
+        createdBy: currentUser,
+        sourceChannel: transaction.sourceChannel || "CHAT_TEXT",
+        paymentMethod: transaction.paymentMethod || "CASH",
+        isBusiness: transaction.isBusiness ?? true,
+        status: transaction.status || "CONFIRMED",
+        rawTextInput: transaction.rawTextInput,
+      };
+
+      await handleSaveTransaction(fullTransaction);
+    } catch (error) {
+      console.error("Direct save error:", error);
+      showToast("Failed to save transaction", "error");
+    } finally {
+      setTimeout(() => setIsSaving(false), 1000);
+    }
   };
 
   if (!session)
@@ -358,7 +412,8 @@ const App: React.FC = () => {
         transactions={transactions}
         userRole={currentRole}
         userName={currentUser}
-        onTransactionAdd={processTransactionResult}
+        onTransactionAdd={handleDirectTransactionAdd}
+        entryMode={entryMode}
       />
 
       <Settings
@@ -374,6 +429,8 @@ const App: React.FC = () => {
         toggleNotification={() => {}}
         lang={lang}
         setLang={setLang}
+        entryMode={entryMode}
+        setEntryMode={handleSetEntryMode}
         onReplayOnboarding={() => setShowOnboarding(true)}
         t={t}
       />
@@ -394,9 +451,12 @@ const App: React.FC = () => {
           transaction={selectedTransaction}
           onClose={() => setSelectedTransaction(null)}
           onDelete={async (id) => {
+            if (isSaving) return; // Prevent double-tap
+            setIsSaving(true);
             await db.deleteTransaction(id);
             loadData(currentRole);
             setSelectedTransaction(null);
+            setTimeout(() => setIsSaving(false), 1000);
           }}
         />
       )}

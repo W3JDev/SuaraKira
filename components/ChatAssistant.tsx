@@ -10,6 +10,7 @@ interface ChatAssistantProps {
   userRole: string;
   userName: string;
   onTransactionAdd: (data: any) => void;
+  entryMode: "expense-only" | "income-only" | "both";
 }
 
 const ChatAssistant: React.FC<ChatAssistantProps> = ({
@@ -19,6 +20,7 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({
   userRole,
   userName,
   onTransactionAdd,
+  entryMode,
 }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -33,11 +35,21 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({
     if (isOpen) {
       gemini.startFinancialChat(transactions, userRole, userName);
       if (messages.length === 0) {
+        let introText = `Hello ${userName}! I'm your Finance Assistant.\n\nYou can:\n`;
+
+        if (entryMode === "expense-only") {
+          introText += `• Say "I spend 20rm in mamak" to add expense\n• Say "grab 15" or "petrol 50"\n• Ask "how much did I spend today?"`;
+        } else if (entryMode === "income-only") {
+          introText += `• Say "sold 5 nasi lemak 25rm" to record sale\n• Say "total sales 100"\n• Ask "how much did I sell today?"`;
+        } else {
+          introText += `• Say "I spend 20rm in mamak" to add expense\n• Say "sold 5 nasi lemak 25rm" to record sale\n• Ask "how much did I sell today?"\n• Or chat normally!`;
+        }
+
         setMessages([
           {
             id: "intro",
             role: "model",
-            text: `Hello ${userName}! I'm your Finance Assistant.\n\nYou can:\n• Say "I spend 20rm in mamak" to add expense\n• Say "sold 5 nasi lemak 25rm" to record sale\n• Ask "how much did I sell today?"\n• Or chat normally!`,
+            text: introText,
             timestamp: Date.now(),
           },
         ]);
@@ -75,12 +87,62 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({
       if (isTransactionLike) {
         try {
           const transactionData = await gemini.parseSimpleTransaction(userInput);
-          onTransactionAdd(transactionData);
+
+          // Filter based on entry mode
+          if (entryMode === "expense-only" && transactionData.type === "sale") {
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: Date.now().toString(),
+                role: "model",
+                text: "⚠️ You're in Expense-Only mode. Sales tracking is disabled. Change mode in Settings if needed.",
+                timestamp: Date.now(),
+              },
+            ]);
+            return;
+          }
+
+          if (entryMode === "income-only" && transactionData.type === "expense") {
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: Date.now().toString(),
+                role: "model",
+                text: "⚠️ You're in Income-Only mode. Expense tracking is disabled. Change mode in Settings if needed.",
+                timestamp: Date.now(),
+              },
+            ]);
+            return;
+          }
+
+          // DIRECT SAVE - No review form!
+          const transaction = {
+            id: undefined, // Let DB generate UUID
+            item:
+              transactionData.merchantName ||
+              transactionData.items?.[0]?.description ||
+              "Transaction",
+            category: transactionData.category || "Uncategorized",
+            quantity: transactionData.items?.[0]?.quantity || 1,
+            price: transactionData.grandTotal || 0,
+            total: transactionData.grandTotal || 0,
+            type: transactionData.type,
+            timestamp: Date.now(),
+            createdBy: userName,
+            rawTextInput: userInput,
+            sourceChannel: "CHAT_TEXT" as const,
+            paymentMethod: "CASH" as const,
+            isBusiness: true,
+            status: "CONFIRMED" as const,
+          };
+
+          // Direct save - no confirmation needed!
+          await onTransactionAdd(transaction);
 
           const confirmMsg: ChatMessage = {
             id: (Date.now() + 1).toString(),
             role: "model",
-            text: `✓ Got it! Added ${transactionData.type === "sale" ? "Sale" : "Expense"}: RM ${transactionData.grandTotal.toFixed(2)} ${transactionData.merchantName ? `at ${transactionData.merchantName}` : ""} ${transactionData.category ? `(${transactionData.category})` : ""}\n\nAnything else?`,
+            text: `✅ SAVED! ${transactionData.type === "sale" ? "Sale" : "Expense"}: RM ${transactionData.grandTotal.toFixed(2)} ${transactionData.merchantName ? `at ${transactionData.merchantName}` : ""} ${transactionData.category ? `(${transactionData.category})` : ""}\n\nAnything else?`,
             timestamp: Date.now(),
           };
           setMessages((prev) => [...prev, confirmMsg]);
@@ -95,7 +157,27 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({
       const { text, transactionData } = await gemini.sendChatMessage(userInput);
 
       if (transactionData) {
-        onTransactionAdd(transactionData);
+        // DIRECT SAVE for chat extraction too
+        const transaction = {
+          id: undefined,
+          item:
+            transactionData.merchantName ||
+            transactionData.items?.[0]?.description ||
+            "Transaction",
+          category: transactionData.category || "Uncategorized",
+          quantity: transactionData.items?.[0]?.quantity || 1,
+          price: transactionData.grandTotal || 0,
+          total: transactionData.grandTotal || 0,
+          type: transactionData.type,
+          timestamp: Date.now(),
+          createdBy: userName,
+          rawTextInput: userInput,
+          sourceChannel: "CHAT_TEXT" as const,
+          paymentMethod: "CASH" as const,
+          isBusiness: true,
+          status: "CONFIRMED" as const,
+        };
+        await onTransactionAdd(transaction);
       }
 
       const botMsg: ChatMessage = {
@@ -163,12 +245,29 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({
               { audio: base64Audio, mime: mimeType },
               true,
             );
-            onTransactionAdd(result);
+
+            // DIRECT SAVE from voice
+            const transaction = {
+              id: undefined,
+              item: result.merchantName || result.items?.[0]?.description || "Voice Entry",
+              category: result.category || "Uncategorized",
+              quantity: result.items?.[0]?.quantity || 1,
+              price: result.grandTotal || 0,
+              total: result.grandTotal || 0,
+              type: result.type,
+              timestamp: Date.now(),
+              createdBy: userName,
+              sourceChannel: "CHAT_VOICE" as const,
+              paymentMethod: "CASH" as const,
+              isBusiness: true,
+              status: "CONFIRMED" as const,
+            };
+            await onTransactionAdd(transaction);
 
             const confirmMsg: ChatMessage = {
               id: Date.now().toString(),
               role: "model",
-              text: `✓ Voice entry added: ${result.type === "sale" ? "Sale" : "Expense"} RM ${result.grandTotal.toFixed(2)}`,
+              text: `✅ SAVED! Voice entry: ${result.type === "sale" ? "Sale" : "Expense"} RM ${result.grandTotal.toFixed(2)}`,
               timestamp: Date.now(),
             };
             setMessages((prev) => [...prev, confirmMsg]);
@@ -279,7 +378,7 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({
         {/* Input Area */}
         <div className="p-4 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 shrink-0">
           <form onSubmit={handleSend} className="relative flex items-center gap-2">
-            {/* Voice Record Button */}
+            {/* Voice Record Button - PREVENT DOUBLE TAP */}
             <button
               type="button"
               onMouseDown={startRecording}
@@ -287,8 +386,8 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({
               onMouseLeave={stopRecording}
               onTouchStart={startRecording}
               onTouchEnd={stopRecording}
-              disabled={isTyping}
-              className={`p-3 rounded-full transition-all disabled:opacity-50 ${
+              disabled={isTyping || isRecording}
+              className={`p-3 rounded-full transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
                 isRecording
                   ? "bg-red-500 text-white scale-110 animate-pulse"
                   : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
@@ -305,12 +404,19 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({
               placeholder={
                 isRecording
                   ? "Recording..."
-                  : "Try: 'I spend 20rm in mamak' or 'sold 5 items 100rm'"
+                  : isTyping
+                    ? "Saving..."
+                    : entryMode === "expense-only"
+                      ? "Try: 'I spend 20rm in mamak' or 'grab 15'"
+                      : entryMode === "income-only"
+                        ? "Try: 'sold 5 nasi lemak 25rm' or 'total sales 100'"
+                        : "Try: 'I spend 20rm in mamak' or 'sold 5 items 100rm'"
               }
-              className="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-full px-5 py-3 text-sm focus:ring-2 focus:ring-emerald-500 dark:text-white"
+              className="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-full px-5 py-3 text-sm focus:ring-2 focus:ring-emerald-500 dark:text-white disabled:opacity-70"
               autoFocus
-              disabled={isRecording}
+              disabled={isRecording || isTyping}
             />
+            {/* PREVENT DOUBLE TAP on submit */}
             <button
               type="submit"
               disabled={!input.trim() || isTyping || isRecording}
@@ -324,6 +430,10 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({
               <span className="text-red-500 font-semibold animate-pulse">
                 🎤 Recording... Release to send
               </span>
+            ) : entryMode === "expense-only" ? (
+              "💡 Type or hold mic: 'spend 50 grab' or 'mamak 20'"
+            ) : entryMode === "income-only" ? (
+              "💡 Type or hold mic: 'sold 10 coffee 35rm' or 'total sales 100'"
             ) : (
               "💡 Type or hold mic to speak: 'spend 50 grab' or 'sold 10 coffee 35rm'"
             )}
