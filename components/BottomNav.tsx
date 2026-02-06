@@ -73,8 +73,8 @@ const BottomNav: React.FC<BottomNavProps> = ({ active, onNavigate, hasNewActivit
         />
 
         {/* Content Container */}
-        <div className="relative max-w-2xl mx-auto px-4 sm:px-6">
-          <div className="flex items-end justify-around pt-3 pb-3">
+        <div className="relative max-w-2xl mx-auto px-2 sm:px-6">
+          <div className="flex items-end justify-around pt-2 pb-2">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = active === item.id;
@@ -91,14 +91,14 @@ const BottomNav: React.FC<BottomNavProps> = ({ active, onNavigate, hasNewActivit
                     }
                   }}
                   className={`
-                    relative flex flex-col items-center justify-center gap-1.5 px-3 rounded-2xl
+                    relative flex flex-col items-center justify-center gap-0.5 px-2 rounded-2xl
                     transition-all duration-300 ease-out group
-                    ${isPrimary ? "pb-2 pt-3" : "py-2"}
+                    ${isPrimary ? "pb-1.5 pt-2" : "py-1.5"}
                     ${
                       isActive
                         ? isPrimary
-                          ? "scale-110 -translate-y-2"
-                          : "scale-105"
+                          ? "scale-105 -translate-y-1"
+                          : "scale-100"
                         : "scale-100 hover:scale-105 active:scale-95"
                     }
                   `}
@@ -119,13 +119,13 @@ const BottomNav: React.FC<BottomNavProps> = ({ active, onNavigate, hasNewActivit
                   {/* Icon Container with Gradient Background when Active */}
                   <div
                     className={`
-                      relative rounded-2xl p-3 transition-all duration-300
+                      relative rounded-2xl p-2 transition-all duration-300
                       ${
                         isActive
                           ? `bg-gradient-to-br ${item.color} shadow-lg`
                           : "bg-transparent group-hover:bg-slate-100/60 dark:group-hover:bg-slate-800/60"
                       }
-                      ${isPrimary && isActive ? "shadow-2xl scale-110" : ""}
+                      ${isPrimary && isActive ? "shadow-xl scale-105" : ""}
                     `}
                     style={{
                       boxShadow: isActive
@@ -135,9 +135,9 @@ const BottomNav: React.FC<BottomNavProps> = ({ active, onNavigate, hasNewActivit
                   >
                     <Icon
                       className={`
-                        ${isPrimary ? "w-7 h-7" : "w-6 h-6"}
+                        ${isPrimary ? "w-6 h-6" : "w-5 h-5"}
                         transition-all duration-300
-                        ${isActive ? "text-white scale-110" : "text-slate-600 dark:text-slate-400"}
+                        ${isActive ? "text-white scale-105" : "text-slate-600 dark:text-slate-400"}
                       `}
                     />
                     {/* Glow effect when active */}
@@ -151,10 +151,10 @@ const BottomNav: React.FC<BottomNavProps> = ({ active, onNavigate, hasNewActivit
                     )}
                   </div>
 
-                  {/* Label */}
+                  {/* Label - Hidden on small screens */}
                   <span
                     className={`
-                      text-[10px] font-semibold tracking-wide transition-all duration-300
+                      hidden sm:block text-[9px] font-semibold tracking-wide transition-all duration-300
                       ${
                         isActive
                           ? "text-slate-900 dark:text-white opacity-100"
@@ -169,14 +169,13 @@ const BottomNav: React.FC<BottomNavProps> = ({ active, onNavigate, hasNewActivit
                     {item.label}
                   </span>
 
-                  {/* Active indicator line */}
+                  {/* Active indicator dot */}
                   {isActive && (
                     <div
-                      className="absolute -bottom-1 left-1/2 -translate-x-1/2 h-1 rounded-full transition-all duration-300"
+                      className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full transition-all duration-300"
                       style={{
-                        width: isPrimary ? "60%" : "50%",
                         background: `linear-gradient(90deg, ${item.color.replace("from-", "").replace(" to-", ", ")})`,
-                        boxShadow: `0 0 12px ${item.color.includes("emerald") ? "rgba(16, 185, 129, 0.6)" : "rgba(0, 0, 0, 0.3)"}`,
+                        boxShadow: `0 0 8px ${item.color.includes("emerald") ? "rgba(16, 185, 129, 0.6)" : "rgba(0, 0, 0, 0.3)"}`,
                       }}
                     />
                   )}
@@ -185,16 +184,16 @@ const BottomNav: React.FC<BottomNavProps> = ({ active, onNavigate, hasNewActivit
             })}
           </div>
 
-          {/* W3JDEV Branding - Subtle and Professional */}
-          <div className="flex items-center justify-center pb-2 pt-1">
+          {/* W3JDEV Branding - Ultra Compact */}
+          <div className="flex items-center justify-center pb-1 pt-0.5">
             <a
               href="https://w3jdev.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-slate-100/60 to-slate-200/60 dark:from-slate-800/60 dark:to-slate-700/60 hover:from-indigo-100/80 hover:to-purple-100/80 dark:hover:from-indigo-900/40 dark:hover:to-purple-900/40 backdrop-blur-sm transition-all duration-300 group border border-slate-200/50 dark:border-slate-600/30"
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full opacity-40 hover:opacity-100 transition-opacity duration-300"
             >
               <svg
-                className="w-3 h-3 text-indigo-600 dark:text-indigo-400 group-hover:scale-110 transition-transform duration-300"
+                className="w-2.5 h-2.5 text-slate-400 dark:text-slate-500"
                 viewBox="0 0 24 24"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
@@ -221,7 +220,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ active, onNavigate, hasNewActivit
                   strokeLinejoin="round"
                 />
               </svg>
-              <span className="text-[9px] font-bold text-slate-600 dark:text-slate-300 tracking-wider group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-indigo-600 group-hover:to-purple-600 dark:group-hover:from-indigo-400 dark:group-hover:to-purple-400 transition-all duration-300">
+              <span className="text-[8px] font-semibold text-slate-400 dark:text-slate-500 tracking-wide">
                 W3JDEV
               </span>
             </a>

@@ -511,7 +511,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 pb-28">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 pb-24">
       {renderToasts()}
 
       {/* Date Range Selector */}
@@ -597,7 +597,7 @@ const App: React.FC = () => {
       </main>
 
       {/* Quick Access Buttons */}
-      <div className="fixed right-4 bottom-20 z-40 flex flex-col gap-2">
+      <div className="fixed right-4 bottom-24 z-40 flex flex-col gap-2">
         <button
           onClick={() => setShowBudgets(true)}
           className="w-12 h-12 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 flex items-center justify-center text-xl"
