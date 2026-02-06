@@ -200,3 +200,61 @@ export interface AuditLogEntry {
 }
 
 export type LocationPermissionStatus = "granted" | "denied" | "prompt" | "not_requested";
+
+// Account Management Types
+export interface Account {
+  id: string;
+  name: string;
+  type: "cash" | "bank" | "credit" | "ewallet" | "other";
+  currency: string;
+  balance: number;
+  icon?: string;
+  color?: string;
+  isDefault?: boolean;
+  createdAt: number;
+  organizationId?: string;
+  createdBy: string;
+}
+
+// Category Management Types
+export interface Category {
+  id: string;
+  name: string;
+  type: "income" | "expense" | "both";
+  icon?: string;
+  color?: string;
+  parentId?: string; // For subcategories
+  isSystem?: boolean; // Cannot be deleted
+  budgetLimit?: number; // Monthly budget limit for this category
+  createdAt: number;
+  organizationId?: string;
+  createdBy: string;
+}
+
+// Budget Management Types
+export interface Budget {
+  id: string;
+  name: string;
+  categoryId?: string; // If null, applies to all expenses
+  amount: number;
+  period: "daily" | "weekly" | "monthly" | "yearly";
+  startDate: number;
+  endDate?: number;
+  alertThreshold: number; // Percentage (e.g., 80 for 80%)
+  spent: number;
+  remaining: number;
+  isActive: boolean;
+  createdAt: number;
+  organizationId?: string;
+  createdBy: string;
+}
+
+export interface BudgetAlert {
+  id: string;
+  budgetId: string;
+  message: string;
+  severity: "info" | "warning" | "critical";
+  percentage: number;
+  timestamp: number;
+  isRead: boolean;
+}

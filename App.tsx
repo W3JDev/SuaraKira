@@ -13,6 +13,11 @@ import BrandedFooter from "./components/BrandedFooter";
 import OrganizationOnboarding from "./components/OrganizationOnboarding";
 import ToastContainer, { useToast } from "./components/Toast";
 import ErrorBoundary from "./components/ErrorBoundary";
+import DateRangeSelector, { DateRange } from "./components/DateRangeSelector";
+import BottomNav, { NavItem } from "./components/BottomNav";
+import Accounts from "./components/Accounts";
+import Categories from "./components/Categories";
+import Budgets from "./components/Budgets";
 import { SettingsIcon, ListIcon, ChartIcon, SparklesIcon } from "./components/Icons";
 import {
   AppState,
@@ -56,6 +61,20 @@ const App: React.FC = () => {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "analytics">("list");
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+
+  // Date Range State
+  const [dateRange, setDateRange] = useState<DateRange>("today");
+  const [customStartDate, setCustomStartDate] = useState<Date | undefined>();
+  const [customEndDate, setCustomEndDate] = useState<Date | undefined>();
+
+  // Bottom Navigation State
+  const [activeNavItem, setActiveNavItem] = useState<NavItem>("list");
+  const [showManualForm, setShowManualForm] = useState(false);
+
+  // Feature Modals State
+  const [showAccounts, setShowAccounts] = useState(false);
+  const [showCategories, setShowCategories] = useState(false);
+  const [showBudgets, setShowBudgets] = useState(false);
 
   // Transaction Review State
   const [reviewData, setReviewData] = useState<Partial<Transaction> | null>(null);
@@ -140,7 +159,7 @@ const App: React.FC = () => {
         setTransactions(newTransactions);
         const currentUseCase =
           (localStorage.getItem("suarakira_use_case") as UseCase) || "business";
-        setStats(db.getDailyStats(newTransactions, currentUseCase));
+        recalculateStats(newTransactions, currentUseCase);
       });
 
       return unsubscribe;
@@ -153,8 +172,44 @@ const App: React.FC = () => {
     const loaded = await db.getTransactions(role);
     setTransactions(loaded);
     const currentUseCase = (localStorage.getItem("suarakira_use_case") as UseCase) || "business";
-    setStats(db.getDailyStats(loaded, currentUseCase));
+    recalculateStats(loaded, currentUseCase);
   };
+
+  const recalculateStats = (txns: Transaction[], useCaseMode: UseCase) => {
+    let calculatedStats: DailyStats;
+    const currentDateRange = dateRange;
+
+    switch (currentDateRange) {
+      case "today":
+        calculatedStats = db.getDailyStats(txns, useCaseMode);
+        break;
+      case "week":
+        calculatedStats = db.getWeekStats(txns, useCaseMode);
+        break;
+      case "month":
+        calculatedStats = db.getMonthStats(txns, useCaseMode);
+        break;
+      case "year":
+        calculatedStats = db.getYearStats(txns, useCaseMode);
+        break;
+      case "custom":
+        if (customStartDate && customEndDate) {
+          calculatedStats = db.getDateRangeStats(txns, useCaseMode, customStartDate, customEndDate);
+        } else {
+          calculatedStats = db.getDailyStats(txns, useCaseMode);
+        }
+        break;
+      default:
+        calculatedStats = db.getDailyStats(txns, useCaseMode);
+    }
+
+    setStats(calculatedStats);
+  };
+
+  // Recalculate stats whenever date range or transactions change
+  useEffect(() => {
+    recalculateStats(transactions, useCase);
+  }, [dateRange, customStartDate, customEndDate, transactions, useCase]);
 
   const handleToggleTheme = () => {
     setIsDarkMode((prev) => {
@@ -170,12 +225,58 @@ const App: React.FC = () => {
     setUseCase(mode);
     localStorage.setItem("suarakira_use_case", mode);
     // Recalculate stats with new context
-    setStats(db.getDailyStats(transactions, mode));
+    recalculateStats(transactions, mode);
   };
 
   const handleSetEntryMode = (mode: EntryMode) => {
     setEntryMode(mode);
     localStorage.setItem("suarakira_entry_mode", mode);
+  };
+
+  const handleDateRangeChange = (range: DateRange, customStart?: Date, customEnd?: Date) => {
+    setDateRange(range);
+    if (range === "custom" && customStart && customEnd) {
+      setCustomStartDate(customStart);
+      setCustomEndDate(customEnd);
+    }
+    // Trigger stats recalculation
+    recalculateStats(transactions, useCase);
+  };
+
+  const handleBottomNavNavigate = (item: NavItem) => {
+    setActiveNavItem(item);
+
+    switch (item) {
+      case "voice":
+        // Open voice recorder (already in InputBar)
+        setIsChatOpen(true);
+        break;
+      case "scan":
+        // Trigger image upload
+        const fileInput = document.createElement("input");
+        fileInput.type = "file";
+        fileInput.accept = "image/*";
+        fileInput.capture = "environment";
+        fileInput.onchange = (e: any) => {
+          const file = e.target.files?.[0];
+          if (file) handleImageSubmit(file);
+        };
+        fileInput.click();
+        break;
+      case "form":
+        // Open manual entry form
+        setShowManualForm(true);
+        handleManualEntry();
+        break;
+      case "list":
+        // Show transaction list (default view)
+        setViewMode("list");
+        break;
+      case "settings":
+        // Open settings
+        setIsSettingsOpen(true);
+        break;
+    }
   };
 
   const handleLogout = async () => {
@@ -413,6 +514,14 @@ const App: React.FC = () => {
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 pb-20">
       {renderToasts()}
 
+      {/* Date Range Selector */}
+      <DateRangeSelector
+        selected={dateRange}
+        onSelect={handleDateRangeChange}
+        customStart={customStartDate}
+        customEnd={customEndDate}
+      />
+
       {/* Header */}
       <header className="sticky top-0 z-30 bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-md px-6 py-4 flex justify-between items-center border-b border-slate-200 dark:border-slate-800">
         <div>
@@ -465,7 +574,7 @@ const App: React.FC = () => {
               }
               setAppState(AppState.ANALYZING);
               try {
-                const i = await gemini.generateInsights(transactions);
+                const i = await gemini.generateInsights(transactions, lang);
                 setInsightData(i);
               } finally {
                 setAppState(AppState.IDLE);
@@ -495,6 +604,31 @@ const App: React.FC = () => {
         customStatus={processingMessage}
         t={t}
       />
+
+      {/* Quick Access Buttons */}
+      <div className="fixed right-4 bottom-24 z-40 flex flex-col gap-2">
+        <button
+          onClick={() => setShowBudgets(true)}
+          className="w-12 h-12 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 flex items-center justify-center text-xl"
+          title="Budgets"
+        >
+          💵
+        </button>
+        <button
+          onClick={() => setShowCategories(true)}
+          className="w-12 h-12 bg-purple-600 text-white rounded-full shadow-lg hover:bg-purple-700 flex items-center justify-center text-xl"
+          title="Categories"
+        >
+          🏷️
+        </button>
+        <button
+          onClick={() => setShowAccounts(true)}
+          className="w-12 h-12 bg-emerald-600 text-white rounded-full shadow-lg hover:bg-emerald-700 flex items-center justify-center text-xl"
+          title="Accounts"
+        >
+          💰
+        </button>
+      </div>
 
       {/* Manual Entry / Review Form */}
       {reviewData && (
@@ -566,6 +700,44 @@ const App: React.FC = () => {
       )}
 
       {showOnboarding && <Onboarding onComplete={() => setShowOnboarding(false)} />}
+
+      {/* Accounts Modal */}
+      {showAccounts && (
+        <Accounts
+          onClose={() => setShowAccounts(false)}
+          organizationId={session?.user?.id}
+          userId={session?.user?.id || "guest"}
+          t={t}
+        />
+      )}
+
+      {/* Categories Modal */}
+      {showCategories && (
+        <Categories
+          onClose={() => setShowCategories(false)}
+          organizationId={session?.user?.id}
+          userId={session?.user?.id || "guest"}
+          t={t}
+        />
+      )}
+
+      {/* Budgets Modal */}
+      {showBudgets && (
+        <Budgets
+          onClose={() => setShowBudgets(false)}
+          organizationId={session?.user?.id}
+          userId={session?.user?.id || "guest"}
+          transactions={transactions}
+          t={t}
+        />
+      )}
+
+      {/* Bottom Navigation */}
+      <BottomNav
+        active={activeNavItem}
+        onNavigate={handleBottomNavNavigate}
+        hasNewActivity={transactions.length > 0}
+      />
 
       {/* Branded Footer */}
       <BrandedFooter />
