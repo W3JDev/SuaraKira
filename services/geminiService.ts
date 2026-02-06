@@ -5,7 +5,15 @@ let ai: GoogleGenAI | null = null;
 
 const getAi = () => {
   if (!ai) {
-    ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const apiKey = process.env.API_KEY || process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      console.error("❌ GEMINI API KEY MISSING! Check your .env.local file.");
+      throw new Error(
+        "API Key not configured. Please add VITE_GEMINI_API_KEY to your .env.local file.",
+      );
+    }
+    console.log("✅ Gemini API Key found:", apiKey.substring(0, 10) + "...");
+    ai = new GoogleGenAI({ apiKey });
   }
   return ai;
 };
@@ -114,11 +122,16 @@ export const startFinancialChat = (
 export const sendChatMessage = async (
   message: string,
 ): Promise<{ text: string; transactionData?: ParsedResult }> => {
-  if (!chatSession) throw new Error("Chat session not started");
+  if (!chatSession) {
+    console.error("❌ Chat session not initialized");
+    throw new Error("Chat session not started");
+  }
 
   try {
+    console.log("📤 Sending message to Gemini:", message);
     const response = await chatSession.sendMessage({ message });
     const rawText = response.text || "";
+    console.log("📥 Received response:", rawText.substring(0, 100) + "...");
 
     // Check for extraction block
     const transactionMatch = rawText.match(/@@TRANSACTION_START@@([\s\S]*?)@@TRANSACTION_END@@/);
@@ -152,9 +165,28 @@ export const sendChatMessage = async (
     }
 
     return { text: displayText, transactionData };
-  } catch (e) {
-    console.error("Chat Error", e);
-    return { text: "Sorry, I lost connection. Please try again.", transactionData: undefined };
+  } catch (e: any) {
+    console.error("❌ Chat Error Details:", {
+      message: e?.message,
+      status: e?.status,
+      statusText: e?.statusText,
+      error: e,
+    });
+
+    // More specific error messages
+    let errorMsg = "Sorry, I lost connection. Please try again.";
+
+    if (e?.message?.includes("API key")) {
+      errorMsg = "❌ API Key error. Please check your VITE_GEMINI_API_KEY in .env.local";
+    } else if (e?.message?.includes("quota") || e?.message?.includes("429")) {
+      errorMsg = "⚠️ API quota exceeded. Please try again later or check your API key limits.";
+    } else if (e?.message?.includes("network") || e?.message?.includes("fetch")) {
+      errorMsg = "🌐 Network error. Please check your internet connection.";
+    } else if (e?.status === 403 || e?.status === 401) {
+      errorMsg = "🔒 Authentication failed. Please verify your API key is valid.";
+    }
+
+    return { text: errorMsg, transactionData: undefined };
   }
 };
 
@@ -178,6 +210,7 @@ Rules:
 `;
 
   try {
+    console.log("🔍 Parsing simple transaction:", text);
     const response = await getAi().models.generateContent({
       model: "gemini-2.5-flash-lite",
       contents: { parts: [{ text: `Extract transaction: "${text}"` }] },
@@ -188,7 +221,11 @@ Rules:
       },
     });
 
-    if (!response.text) throw new Error("No response");
+    if (!response.text) {
+      console.error("❌ Empty response from Gemini");
+      throw new Error("No response");
+    }
+    console.log("✅ Parse successful");
     const parsed = cleanAndParseJSON(response.text);
 
     // Ensure proper structure
@@ -205,8 +242,18 @@ Rules:
       ],
       originalTranscript: text,
     };
-  } catch (error) {
-    console.error("Simple parser error:", error);
+  } catch (error: any) {
+    console.error("❌ Simple parser error:", {
+      message: error?.message,
+      error,
+    });
+
+    if (error?.message?.includes("API key")) {
+      throw new Error(
+        "API Key error. Please check your .env.local file has VITE_GEMINI_API_KEY set.",
+      );
+    }
+
     throw new Error(
       "Couldn't understand that. Try: 'I spend 20rm in mamak' or 'sold 5 items for 100rm'",
     );
@@ -228,6 +275,7 @@ export const processTransactionInput = async (
   `;
 
   try {
+    console.log("🎙️ Processing transaction input (audio:", isAudio, ")");
     const contents = isAudio
       ? {
           parts: [
@@ -247,11 +295,24 @@ export const processTransactionInput = async (
       },
     });
 
-    if (!response.text) throw new Error("No response");
+    if (!response.text) {
+      console.error("❌ No response from Gemini");
+      throw new Error("No response");
+    }
+    console.log("✅ Transaction input processed");
     return cleanAndParseJSON(response.text) as ParsedResult;
-  } catch (error) {
-    console.error("Gemini Input Processing Error:", error);
-    throw new Error("Failed to process input.");
+  } catch (error: any) {
+    console.error("❌ Gemini Input Processing Error:", {
+      message: error?.message,
+      isAudio,
+      error,
+    });
+
+    if (error?.message?.includes("API key")) {
+      throw new Error("API Key error. Check your .env.local file.");
+    }
+
+    throw new Error("Failed to process input. Please try again.");
   }
 };
 
