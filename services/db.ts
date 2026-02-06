@@ -98,9 +98,8 @@ export const saveTransaction = async (transaction: Transaction): Promise<Transac
 
     const profile = await getProfile(user.id);
 
-    // Transform to DB format
-    const dbTransaction = {
-      id: transaction.id,
+    // Transform to DB format - let Supabase generate UUID if id is a timestamp
+    const dbTransaction: any = {
       item: transaction.item,
       category: transaction.category,
       quantity: transaction.quantity,
@@ -113,9 +112,22 @@ export const saveTransaction = async (transaction: Transaction): Promise<Transac
       created_by: user.id,
       organization_id: profile.organization_id,
       timestamp: new Date(transaction.timestamp).toISOString(),
+
+      // New fields (optional, backward compatible)
+      source_channel: transaction.sourceChannel || "LEGACY",
+      direction: transaction.type === "sale" ? "SALE_IN" : "EXPENSE_OUT",
+      payment_method: transaction.paymentMethod || "CASH",
+      is_business: transaction.isBusiness ?? true,
+      status: transaction.status || "CONFIRMED",
     };
 
-    const { error } = await supabase.from("transactions").upsert(dbTransaction);
+    // Only include id if it's a valid UUID (for updates)
+    // Otherwise let DB generate new UUID
+    if (transaction.id && transaction.id.includes("-")) {
+      dbTransaction.id = transaction.id;
+    }
+
+    const { error } = await supabase.from("transactions").insert(dbTransaction);
 
     if (error) throw error;
 
