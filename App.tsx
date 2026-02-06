@@ -511,7 +511,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 pb-20">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 pb-28">
       {renderToasts()}
 
       {/* Date Range Selector */}
@@ -596,17 +596,8 @@ const App: React.FC = () => {
         )}
       </main>
 
-      <InputBar
-        onChatOpen={handleChatOpen}
-        onManualEntry={handleManualEntry}
-        onImageSubmit={handleImageSubmit}
-        appState={appState}
-        customStatus={processingMessage}
-        t={t}
-      />
-
       {/* Quick Access Buttons */}
-      <div className="fixed right-4 bottom-24 z-40 flex flex-col gap-2">
+      <div className="fixed right-4 bottom-20 z-40 flex flex-col gap-2">
         <button
           onClick={() => setShowBudgets(true)}
           className="w-12 h-12 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 flex items-center justify-center text-xl"
@@ -670,19 +661,10 @@ const App: React.FC = () => {
         useCase={useCase}
         setUseCase={handleSetUseCase}
         onReplayOnboarding={() => setShowOnboarding(true)}
+        onSwitchRole={handleSwitchRole}
+        currentRole={currentRole}
         t={t}
       />
-
-      {isSettingsOpen && (
-        <div className="fixed bottom-20 left-6 z-[70] w-full max-w-xs">
-          <button
-            onClick={handleSwitchRole}
-            className="w-full bg-slate-800 text-white py-3 rounded-xl shadow-lg mb-2 text-sm font-bold"
-          >
-            Switch Role: {currentRole === "admin" ? "To Staff" : "To Admin"}
-          </button>
-        </div>
-      )}
 
       {selectedTransaction && (
         <ReceiptModal
@@ -738,9 +720,6 @@ const App: React.FC = () => {
         onNavigate={handleBottomNavNavigate}
         hasNewActivity={transactions.length > 0}
       />
-
-      {/* Branded Footer */}
-      <BrandedFooter />
     </div>
   );
 
