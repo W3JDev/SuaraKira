@@ -541,9 +541,27 @@ const App: React.FC = () => {
       <header className="sticky top-0 z-30 bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-md px-6 py-4 flex justify-between items-center border-b border-slate-200 dark:border-slate-800">
         <div>
           <h1 className="text-xl font-bold text-emerald-900 dark:text-emerald-400">SuaraKira</h1>
-          <p className="text-[10px] text-slate-500 uppercase tracking-wide font-semibold">
-            {currentRole === "admin" ? "Master Dashboard" : `Staff Book: ${currentUser}`}
-          </p>
+          {currentRole === "admin" ? (
+            <p 
+              className="text-[9px] font-bold tracking-[0.15em] uppercase"
+              style={{
+                background: 'linear-gradient(135deg, #FFD700 0%, #FFA500 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+                textShadow: '0 0 20px rgba(255, 215, 0, 0.6), 0 0 40px rgba(255, 215, 0, 0.3)',
+                filter: 'drop-shadow(0 0 8px rgba(255, 215, 0, 0.5))',
+                fontWeight: '700',
+                letterSpacing: '0.15em',
+              }}
+            >
+              W3JDEV
+            </p>
+          ) : (
+            <p className="text-[10px] text-slate-500 uppercase tracking-wide font-semibold">
+              Staff Book: {currentUser}
+            </p>
+          )}
         </div>
         <div className="flex gap-2">
           {currentRole === "admin" && (
