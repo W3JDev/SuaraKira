@@ -55,14 +55,14 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({
     if (isOpen) {
       gemini.startFinancialChat(transactions, userRole, userName);
       if (messages.length === 0) {
-        let introText = `Hello ${userName}! 👋\n\nI'm your AI Finance Assistant.\n\n`;
+        let introText = `Hey ${userName}! 👋\n\nI'm your AI Finance Assistant. Track any transaction in under 10 seconds!\n\n`;
         
         if (entryMode === "expense-only") {
-          introText += `💸 Say "I spend 20rm in mamak"\n📝 Or "grab 15", "petrol 50"\n❓ Ask "how much did I spend today?"`;
+          introText += `💸 **Expense Tracking:**\n• "Spent 50rm on groceries"\n• "Grab food 25"\n• "Petrol 100 ringgit"\n\n❓ Ask me: "How much did I spend this week?" or "Show my spending by category"`;
         } else if (entryMode === "income-only") {
-          introText += `💰 Say "sold 5 nasi lemak 25rm"\n📊 Or "total sales 100"\n❓ Ask "how much did I sell today?"`;
+          introText += `💰 **Income Tracking:**\n• "Sold 10 coffee 30rm"\n• "Client payment 500"\n• "Total sales today 250"\n\n❓ Ask me: "What's my revenue this month?" or "Show best-selling items"`;
         } else {
-          introText += `💸 Say "I spend 20rm" for expenses\n💰 Say "sold 5 items 25rm" for sales\n💬 Or just chat naturally!`;
+          introText += `💬 **Just type naturally:**\n• "I spent 20rm on mamak"\n• "Sold 5 nasi lemak for 25rm"\n• "Petrol 100, groceries 50"\n\n✨ I understand Malay, English, Tamil, Mandarin, and Manglish!\n\n❓ Try asking: "What's my net profit?" or "Show spending trends"`;
         }
 
         setMessages([{

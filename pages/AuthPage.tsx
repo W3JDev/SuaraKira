@@ -52,12 +52,11 @@ const AuthPage: React.FC<AuthPageProps> = ({ onLogin }) => {
 
           <div className="space-y-8">
             <h2 className="text-4xl font-bold leading-tight">
-              Focus on your food, <br />
-              <span className="text-emerald-400">we handle the numbers.</span>
+              Your AI Finance Assistant.<br />
+              <span className="text-emerald-400">Track in under 10 seconds.</span>
             </h2>
             <p className="text-emerald-100 text-lg opacity-90 max-w-sm">
-              The AI-powered accountant built specifically for Malaysian hawkers. Voice-first,
-              effortless, and powerful.
+              AI-native personal and business finance tracker. Just type or speak naturally—no accounting knowledge needed.
             </p>
           </div>
         </div>
@@ -65,18 +64,18 @@ const AuthPage: React.FC<AuthPageProps> = ({ onLogin }) => {
         <div className="relative z-10 space-y-4">
           <div className="flex items-center gap-4 text-sm font-medium text-emerald-200">
             <div className="flex items-center gap-2">
-              <MicIcon className="w-4 h-4" /> Voice Recording
+              <SparklesIcon className="w-4 h-4" /> NLP AI
             </div>
             <div className="w-1 h-1 bg-emerald-600 rounded-full"></div>
             <div className="flex items-center gap-2">
-              <WalletIcon className="w-4 h-4" /> Profit Tracking
+              <MicIcon className="w-4 h-4" /> Type or Speak
             </div>
             <div className="w-1 h-1 bg-emerald-600 rounded-full"></div>
             <div className="flex items-center gap-2">
-              <SparklesIcon className="w-4 h-4" /> AI Insights
+              <WalletIcon className="w-4 h-4" /> Smart Insights
             </div>
           </div>
-          <p className="text-xs text-emerald-400/60">© 2024 w3jdev · w3jdev.com</p>
+          <p className="text-xs text-emerald-400/60">© 2026 w3jdev · w3jdev.com</p>
         </div>
       </div>
 
@@ -98,7 +97,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onLogin }) => {
             <p className="text-slate-500 dark:text-slate-400 mt-2 text-sm">
               {isLogin
                 ? "Enter your details to access your dashboard."
-                : "Start managing your business today."}
+                : "Start tracking personal or business finances in under 10 seconds."}
             </p>
           </div>
 
