@@ -263,8 +263,8 @@ const App: React.FC = () => {
 
     switch (item) {
       case "voice":
-        // Open voice recorder (already in InputBar)
-        setIsChatOpen(true);
+        // Toggle AI chat open/close
+        setIsChatOpen(!isChatOpen);
         break;
       case "scan":
         // Trigger image upload
@@ -526,7 +526,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 pb-24">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 pb-32">
       {renderToasts()}
 
       {/* Date Range Selector */}
@@ -760,6 +760,13 @@ const App: React.FC = () => {
           transactions={transactions}
           t={t}
         />
+      )}
+
+      {/* Branded Footer - Only show when chat is closed */}
+      {!isChatOpen && (
+        <div className="fixed bottom-14 left-0 right-0 z-40 pointer-events-none">
+          <BrandedFooter />
+        </div>
       )}
 
       {/* Bottom Navigation */}

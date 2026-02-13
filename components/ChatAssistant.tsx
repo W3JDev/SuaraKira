@@ -231,10 +231,12 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({
 
         {/* Chat Container - iOS Message Style */}
         <motion.div
-          className="relative w-full h-full flex flex-col"
+          className="relative w-full flex flex-col"
           style={{ 
             background: IOSDesign.colors.light.background,
             maxWidth: '100vw',
+            height: 'calc(100vh - 60px)', // Full height minus BottomNav
+            marginBottom: '60px', // Space for BottomNav
           }}
           variants={IOSAnimations.modal.bottomSheet}
           initial="hidden"
@@ -283,15 +285,14 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({
             </motion.button>
           </div>
 
-          {/* Messages Area - With proper bottom padding to avoid nav overlap */}
+          {/* Messages Area - With proper bottom padding to avoid input overlap */}
           <div
             ref={scrollRef}
-            className="flex-1 overflow-y-auto px-4 space-y-3"
+            className="flex-1 overflow-y-auto px-4 space-y-3 pb-4"
             style={{ 
               background: IOSDesign.colors.light.background,
               scrollBehavior: 'smooth',
               paddingTop: '16px',
-              paddingBottom: 'calc(80px + env(safe-area-inset-bottom))', // Input bar height (72px) + extra spacing (8px)
             }}
           >
             {messages.map((msg, index) => (
@@ -361,7 +362,7 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({
             )}
           </div>
 
-          {/* Input Bar - iOS Keyboard Toolbar Style with Voice Button */}
+          {/* Input Bar - iOS Keyboard Toolbar Style - STATIC at bottom of chat container */}
           <div
             className="shrink-0 px-4 py-3"
             style={{

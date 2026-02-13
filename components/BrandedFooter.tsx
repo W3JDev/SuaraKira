@@ -2,14 +2,14 @@ import React from "react";
 
 const BrandedFooter: React.FC = () => {
   return (
-    <div className="w-full bg-transparent py-2 px-4 mt-8">
+    <div className="w-full bg-transparent py-2 px-4">
       <div className="max-w-md mx-auto flex items-center justify-center gap-1.5 text-xs">
         <span className="text-slate-400 dark:text-slate-500">Crafted with ❤️ by</span>
         <a
           href="https://w3jdev.com"
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 px-2 py-0.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-md font-semibold transition-all text-xs"
+          className="inline-flex items-center gap-1 px-2 py-0.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-md font-semibold transition-all text-xs pointer-events-auto"
         >
           <svg
             className="w-3 h-3"
